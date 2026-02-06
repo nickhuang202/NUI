@@ -1,0 +1,27 @@
+{
+  "Actions": [],
+  "Information": {
+    "Assembled At": "CTH",
+    "BMC MAC Address Size": "1",
+    "BMC MAC Base": "b4:db:91:95:f7:8e",
+    "EEPROM location on Fabric": "FCB",
+    "Meta PCB Part Number": "131100026   ",
+    "Meta PCBA Part Number": "132100052   ",
+    "ODM/JDM PCBA Part Number": "R3214G000903",
+    "ODM/JDM PCBA Serial Number": "A093124430023",
+    "PCB Manufacturer": "ZFP",
+    "Product Name": "WEDGE800BACT",
+    "Product Part Number": "30100058",
+    "Product Production State": "3",
+    "Product Serial Number": "F501224480027",
+    "Product Sub-Version": "0",
+    "Product Version": "1",
+    "Switch ASIC MAC Address Size": "138",
+    "Switch ASIC MAC Base": "b4:db:91:95:f7:8f",
+    "System Assembly Part Number": "        ",
+    "System Manufacturer": "CLS",
+    "System Manufacturing Date": "20241128",
+    "Version": "5"
+  },
+  "Resources": []
+}

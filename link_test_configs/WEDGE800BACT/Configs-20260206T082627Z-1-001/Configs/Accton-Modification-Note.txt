@@ -1,0 +1,22 @@
+
+A. Modify optics_one_qsfp_wedge800bact.json,optics_two_qsfp_wedge800bact.json, and copper_qsfp_wedge800bact.json
+    Modify "remediation_enabled" from "false" to "true"
+    ----------------------------------
+    "remediation_enabled": "false"  --> "true"
+
+    Fixed:
+    [   FAILED ] cold_boot.AgentEnsembleLinkTest.testOpticsRemediation (0 ms)
+    [   FAILED ] warm_boot.AgentEnsembleLinkTest.testOpticsRemediation (0 ms)
+
+B. Modify optics_one_link_wedge800bact.json
+    Modify topologies:
+    ======================================
+    29/1-->25  ==> 29/1-->23 
+    29/5-->25  ==> 29/5-->23   
+
+C. Modify copper_link_wedge800bact.json
+   Merged the upstream ports topologies from  optics_two_link_wedge800bact.json
+
+
+
+
