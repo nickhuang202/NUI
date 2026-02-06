@@ -1,0 +1,127 @@
+{
+  "labs": [
+    {
+      "id": "lab_20260121124137953279",
+      "name": "Taichung_Lab",
+      "description": "Taichung Lab",
+      "platforms": [
+        {
+          "id": "platform_20260121124442016492",
+          "name": "MINIPACK3BA",
+          "description": "MINIPACK3BA TH5 BCM solusion",
+          "duts": [
+            {
+              "id": "dut_20260121124905078197",
+              "name": "AP29047232",
+              "ip_address": "172.17.9.199",
+              "config_type": "Config A",
+              "description": "3BA",
+              "created_at": "2026-01-21T12:49:05.078220",
+              "updated_at": "2026-01-21T15:05:54.084675",
+              "password": "root"
+            }
+          ],
+          "created_at": "2026-01-21T12:44:42.016512",
+          "updated_at": "2026-02-04T18:18:06.637894"
+        },
+        {
+          "id": "platform_20260121124329300720",
+          "name": "MINIPACK3N",
+          "description": "MINIPACK3N NV solution",
+          "duts": [
+            {
+              "id": "dut_20260121124749573715",
+              "name": "AP29047231",
+              "ip_address": "172.17.9.244",
+              "config_type": "Config A",
+              "description": "Full transceiver",
+              "created_at": "2026-01-21T12:47:49.573735",
+              "updated_at": "2026-01-21T16:06:32.851189",
+              "password": "root123"
+            }
+          ],
+          "created_at": "2026-01-21T12:43:29.300741",
+          "updated_at": "2026-01-29T12:29:30.484558"
+        }
+      ],
+      "created_at": "2026-01-21T12:41:37.953301",
+      "updated_at": "2026-02-04T18:18:06.637901"
+    },
+    {
+      "id": "lab_20260121124212835066",
+      "name": "Avarta_Lab",
+      "description": "AVarta Lab",
+      "platforms": [
+        {
+          "id": "platform_20260121130719208324",
+          "name": "MINIPACK3BA",
+          "description": "MINIPACK3BA TH5 BCM solusion",
+          "duts": [
+            {
+              "id": "dut_20260121130719208350",
+              "name": "AP29047232",
+              "ip_address": "172.16.2.76",
+              "config_type": "Config A",
+              "description": "3BA",
+              "created_at": "2026-01-21T13:07:19.208355",
+              "updated_at": "2026-01-21T16:58:08.991450",
+              "password": "root"
+            }
+          ],
+          "created_at": "2026-01-21T13:07:19.208344",
+          "updated_at": "2026-02-05T09:41:32.270978"
+        },
+        {
+          "id": "platform_20260205093818920498",
+          "name": "WEDGE800BACT",
+          "description": "Wedge800bact bcm th5 solution",
+          "duts": [
+            {
+              "id": "dut_20260205093412806350",
+              "name": "W800BACT#16-Kernel6.16.1",
+              "ip_address": "172.16.107.102",
+              "password": "",
+              "config_type": "Config A",
+              "description": "Kernel-6.16.1",
+              "created_at": "2026-02-05T09:34:12.806364",
+              "updated_at": "2026-02-05T09:41:32.270986"
+            }
+          ],
+          "created_at": "2026-02-05T09:38:18.920516",
+          "updated_at": "2026-02-05T09:41:32.270989"
+        }
+      ],
+      "created_at": "2026-01-21T12:42:12.835087",
+      "updated_at": "2026-02-05T09:41:32.270992"
+    },
+    {
+      "id": "lab_20260121124233851420",
+      "name": "Bringup_Lab",
+      "description": "Bringup lab",
+      "platforms": [
+        {
+          "id": "platform_20260121130946573730",
+          "name": "WEDGE800BACT",
+          "description": "TH5T",
+          "duts": [
+            {
+              "id": "dut_20260121130946573759",
+              "name": "AP29047231",
+              "ip_address": "172.16.133.103",
+              "config_type": "Config A",
+              "description": "Full transceiver",
+              "created_at": "2026-01-21T13:09:46.573763",
+              "updated_at": "2026-01-22T13:24:11.235252",
+              "password": ""
+            }
+          ],
+          "created_at": "2026-01-21T13:09:46.573753",
+          "updated_at": "2026-02-05T09:41:10.467775"
+        }
+      ],
+      "created_at": "2026-01-21T12:42:33.851441",
+      "updated_at": "2026-02-05T09:41:10.467780"
+    }
+  ],
+  "version": "1.0"
+}

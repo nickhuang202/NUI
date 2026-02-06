@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LLDP Discovery Dashboard</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3d5a6c 50%, #2c3e50 100%);
+            margin: 0;
+            padding: 20px;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: rgba(52, 73, 94, 0.8);
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+            gap: 15px;
+            position: relative;
+        }
+
+        h1 {
+            color: #ffffff;
+            font-size: 28px;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .version-display {
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 6px 12px;
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 6px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            font-weight: 500;
+            color: #ffffff;
+        }
+
+        select, button {
+            padding: 10px 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        select {
+            background: rgba(52, 73, 94, 0.8);
+            color: #ffffff;
+            min-width: 150px;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #5cb85c;
+        }
+
+        button {
+            background: #5cb85c;
+            color: white;
+            border: none;
+        }
+
+        button:hover {
+            background: #4cae4c;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(92, 184, 92, 0.3);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-link {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            background: rgba(93, 173, 226, 0.2);
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 2px solid rgba(93, 173, 226, 0.3);
+        }
+
+        .nav-link:hover {
+            background: rgba(93, 173, 226, 0.3);
+            border-color: #5dade2;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: rgba(52, 73, 94, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .card h2 {
+            color: #ffffff;
+            margin-top: 0;
+            margin-bottom: 20px;
+            font-size: 22px;
+            font-weight: 600;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(92, 184, 92, 0.3);
+        }
+
+        #topology-container {
+            min-height: 600px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            background: rgba(44, 62, 80, 0.5);
+            position: relative;
+        }
+
+        #topology-svg {
+            width: 100%;
+            height: 600px;
+        }
+
+        .node {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .node:hover {
+            filter: brightness(1.3);
+        }
+
+        .node circle {
+            stroke-width: 3px;
+        }
+
+        .node.local circle {
+            fill: #5cb85c;
+            stroke: #4cae4c;
+        }
+
+        .node.remote circle {
+            fill: #5dade2;
+            stroke: #3498db;
+        }
+
+        .node text {
+            font-size: 12px;
+            font-weight: 600;
+            pointer-events: none;
+            fill: #ffffff;
+        }
+
+        .link {
+            stroke: rgba(255, 255, 255, 0.4);
+            stroke-width: 2px;
+            fill: none;
+        }
+
+        .link-label {
+            font-size: 11px;
+            fill: #ffffff;
+            text-anchor: middle;
+            pointer-events: none;
+            font-weight: 600;
+            paint-order: stroke;
+            stroke: rgba(44, 62, 80, 0.8);
+            stroke-width: 3px;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: rgba(52, 73, 94, 0.95);
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(92, 184, 92, 0.3);
+        }
+
+        .modal-header h3 {
+            color: #ffffff;
+            font-size: 24px;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            font-size: 28px;
+            color: #ffffff;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: none;
+        }
+
+        .detail-row {
+            display: flex;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #5cb85c;
+            min-width: 150px;
+        }
+
+        .detail-value {
+            color: #e8ecef;
+            word-break: break-all;
+        }
+
+        .capability-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 2px;
+            background: rgba(93, 173, 226, 0.3);
+            color: #5dade2;
+            border: 1px solid #5dade2;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-indicator.online {
+            background: rgba(92, 184, 92, 0.2);
+            color: #5cb85c;
+            border: 1px solid #5cb85c;
+        }
+
+        .status-indicator.offline {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-indicator.online .status-dot {
+            background: #5cb85c;
+        }
+
+        .status-indicator.offline .status-dot {
+            background: #e74c3c;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #ffffff;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        .error {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #e74c3c;
+        }
+
+        .info-panel {
+            background: rgba(93, 173, 226, 0.2);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(93, 173, 226, 0.3);
+        }
+
+        .info-panel strong {
+            color: #5dade2;
+        }
+
+        /* Debug window styles */
+        .debug-window {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 600px;
+            max-height: 70vh;
+            background: rgba(30, 39, 46, 0.98);
+            border: 2px solid rgba(92, 184, 92, 0.5);
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 2000;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        .debug-window.show {
+            display: flex;
+        }
+
+        .debug-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(92, 184, 92, 0.2);
+            border-bottom: 2px solid rgba(92, 184, 92, 0.3);
+        }
+
+        .debug-header h3 {
+            color: #5cb85c;
+            font-size: 18px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .debug-close {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #ffffff;
+            font-size: 20px;
+            cursor: pointer;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .debug-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .debug-body {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .debug-section {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .debug-section:last-child {
+            border-bottom: none;
+        }
+
+        .debug-section h4 {
+            color: #5dade2;
+            font-size: 14px;
+            margin: 0 0 10px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .debug-content {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #e8ecef;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .debug-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            margin: 2px;
+        }
+
+        .debug-badge.success {
+            background: rgba(92, 184, 92, 0.2);
+            color: #5cb85c;
+            border: 1px solid #5cb85c;
+        }
+
+        .debug-badge.error {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .debug-badge.warning {
+            background: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+            border: 1px solid #f39c12;
+        }
+
+        .debug-command {
+            background: rgba(93, 173, 226, 0.1);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #5dade2;
+            margin: 3px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>
+                <span>🔍</span>
+                LLDP Network Discovery Dashboard
+            </h1>
+            <div class="controls">
+                <div class="control-group">
+                    <label for="interface-select">Interface:</label>
+                    <select id="interface-select">
+                        <option value="">All Interfaces</option>
+                        <option value="eth0" selected>eth0</option>
+                    </select>
+                </div>
+                <button id="refresh-btn">🔄 Refresh</button>
+                <button id="debug-btn">🐛 Debug Info</button>
+                <button id="config-btn">⚙️ LLDP Config</button>
+                <div class="nav-links">
+                    <a href="/" class="nav-link">Home</a>
+                    <a href="/dashboard" class="nav-link">Test Dashboard</a>
+                </div>
+            </div>
+            <div class="version-display" id="versionDisplay" style="position: absolute; top: 20px; right: 30px;"></div>
+        </header>
+
+        <div class="content">
+            <div class="card">
+                <h2>Network Topology</h2>
+                <div id="info-panel" class="info-panel" style="display: none;">
+                    <strong>Local System:</strong> <span id="local-hostname"></span> 
+                    <span id="local-ip"></span>
+                </div>
+                <div id="topology-container">
+                    <svg id="topology-svg"></svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Details Modal -->
+    <div id="device-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Device Details</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Window -->
+    <div id="debug-window" class="debug-window">
+        <div class="debug-header">
+            <h3>🐛 LLDP Debug Information</h3>
+            <button class="debug-close" id="close-debug">&times;</button>
+        </div>
+        <div class="debug-body" id="debug-body">
+            <div class="loading">Loading debug information</div>
+        </div>
+    </div>
+
+    <!-- LLDP Configuration Modal -->
+    <div id="config-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h3>⚙️ LLDP Configuration</h3>
+                <button class="close-btn" id="close-config">&times;</button>
+            </div>
+            <div id="config-body" style="padding: 20px;">
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #5dade2; margin-bottom: 15px; font-size: 16px;">📡 LLDP Transmission Settings</h4>
+                    <p style="color: #e8ecef; margin-bottom: 15px; font-size: 14px;">
+                        Configure LLDP packet transmission on network interfaces. Enable TX to broadcast this device's information to network neighbors.
+                    </p>
+                    
+                    <div style="background: rgba(93, 173, 226, 0.1); padding: 15px; border-radius: 6px; border: 1px solid rgba(93, 173, 226, 0.3); margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 10px;">
+                            <label style="color: #ffffff; font-weight: 600; min-width: 100px;">Interface:</label>
+                            <select id="config-interface" style="flex: 1; padding: 8px; background: rgba(52, 73, 94, 0.8); color: #ffffff; border: 2px solid rgba(255, 255, 255, 0.1); border-radius: 6px; font-size: 14px;">
+                                <option value="eth0">eth0</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <label style="color: #ffffff; font-weight: 600; min-width: 100px;">TX Status:</label>
+                            <div style="flex: 1; display: flex; gap: 10px;">
+                                <button id="enable-tx-btn" onclick="configureLLDP(true)" style="flex: 1; padding: 10px 20px; background: #5cb85c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                                    ✓ Enable TX
+                                </button>
+                                <button id="disable-tx-btn" onclick="configureLLDP(false)" style="flex: 1; padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px;">
+                                    ✗ Disable TX
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="config-status" style="padding: 12px; background: rgba(92, 184, 92, 0.1); border: 1px solid rgba(92, 184, 92, 0.3); border-radius: 6px; display: none; margin-bottom: 15px;">
+                        <span id="config-status-text" style="color: #5cb85c; font-weight: 600;"></span>
+                    </div>
+                    
+                    <div id="config-error" style="padding: 12px; background: rgba(231, 76, 60, 0.1); border: 1px solid rgba(231, 76, 60, 0.3); border-radius: 6px; display: none; margin-bottom: 15px;">
+                        <span id="config-error-text" style="color: #e74c3c; font-weight: 600;"></span>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #5dade2; margin-bottom: 10px; font-size: 16px;">📊 LLDP Statistics</h4>
+                    <button onclick="loadLLDPStatus()" style="padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-bottom: 10px;">
+                        🔄 Refresh Statistics
+                    </button>
+                    <div id="lldp-statistics" style="background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 12px; color: #e8ecef; max-height: 200px; overflow-y: auto;">
+                        <div class="loading">Loading statistics</div>
+                    </div>
+                </div>
+                
+                <div style="background: rgba(243, 156, 18, 0.1); padding: 12px; border-radius: 6px; border: 1px solid rgba(243, 156, 18, 0.3);">
+                    <strong style="color: #f39c12;">ℹ️ Note:</strong>
+                    <span style="color: #e8ecef; font-size: 13px;">
+                        After enabling TX, it may take 30-60 seconds for neighbors to discover this device. Check statistics to verify packets are being sent.
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentTopology = null;
+        let simulation = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadInterfaces();
+            loadTopology();
+
+            // Event listeners
+            document.getElementById('interface-select').addEventListener('change', loadTopology);
+            document.getElementById('refresh-btn').addEventListener('click', () => {
+                loadInterfaces();
+                loadTopology();
+            });
+            document.getElementById('debug-btn').addEventListener('click', showDebugInfo);
+            document.getElementById('close-modal').addEventListener('click', closeModal);
+            document.getElementById('close-debug').addEventListener('click', closeDebugWindow);
+            document.getElementById('device-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'device-modal') {
+                    closeModal();
+                }
+            });
+        });
+
+        // Load available interfaces
+        async function loadInterfaces() {
+            try {
+                const response = await fetch('/api/lldp/interfaces');
+                const data = await response.json();
+                
+                const select = document.getElementById('interface-select');
+                const currentValue = select.value || 'eth0'; // Default to eth0
+                
+                // Clear existing options
+                select.innerHTML = '<option value="">All Interfaces</option>';
+                
+                // Add interface options
+                data.interfaces.forEach(iface => {
+                    const option = document.createElement('option');
+                    option.value = iface;
+                    option.textContent = iface;
+                    if (iface === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                });
+                
+                // If eth0 exists and no current value, select it
+                if (data.interfaces.includes('eth0') && !select.value) {
+                    select.value = 'eth0';
+                }
+            } catch (error) {
+                console.error('Error loading interfaces:', error);
+            }
+        }
+
+        // Show configuration modal
+        async function showConfigModal() {
+            const modal = document.getElementById('config-modal');
+            modal.style.display = 'block';
+            
+            // Load available interfaces into config dropdown first
+            await loadConfigInterfaces();
+            
+            // Then load current LLDP status
+            await loadLLDPStatus();
+        }
+
+        // Close configuration modal
+        function closeConfigModal() {
+            const modal = document.getElementById('config-modal');
+            modal.style.display = 'none';
+        }
+
+        // Load interfaces into config modal dropdown
+        async function loadConfigInterfaces() {
+            try {
+                const response = await fetch('/api/lldp/interfaces');
+                const interfaces = await response.json();
+                
+                const select = document.getElementById('config-interface');
+                const currentInterface = document.getElementById('interface-select').value;
+                
+                select.innerHTML = interfaces.map(iface => 
+                    `<option value="${iface}" ${iface === currentInterface ? 'selected' : ''}>${iface}</option>`
+                ).join('');
+            } catch (error) {
+                console.error('Error loading config interfaces:', error);
+            }
+        }
+
+        // Configure LLDP transmission
+        async function configureLLDP(enable) {
+            const interface = document.getElementById('config-interface').value;
+            const statusDiv = document.getElementById('config-status');
+            const errorDiv = document.getElementById('config-error');
+            const statusText = document.getElementById('config-status-text');
+            const errorText = document.getElementById('config-error-text');
+            
+            // Hide previous messages
+            statusDiv.style.display = 'none';
+            errorDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/api/lldp/configure', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        interface: interface,
+                        enable_tx: enable
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    statusText.textContent = `✓ ${result.message}`;
+                    statusDiv.style.display = 'block';
+                    
+                    // Reload status after configuration
+                    setTimeout(() => {
+                        loadLLDPStatus();
+                    }, 1000);
+                } else {
+                    errorText.textContent = `✗ Error: ${result.error || 'Configuration failed'}`;
+                    errorDiv.style.display = 'block';
+                }
+            } catch (error) {
+                console.error('Error configuring LLDP:', error);
+                errorText.textContent = `✗ Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // Load LLDP status and statistics
+        async function loadLLDPStatus() {
+            const interface = document.getElementById('config-interface').value;
+            
+            try {
+                const response = await fetch(`/api/lldp/status?interface=${interface}`);
+                const status = await response.json();
+                
+                if (status.error) {
+                    document.getElementById('lldp-statistics').innerHTML = `
+                        <div style="color: #e74c3c; padding: 15px;">
+                            Error loading status: ${status.error}
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Display statistics
+                const statsHtml = `
+                    <div style="color: #e8ecef; line-height: 1.8;">
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span>TX Status:</span>
+                            <strong style="color: ${status.tx_enabled ? '#5cb85c' : '#e74c3c'};">
+                                ${status.tx_enabled ? '✓ Enabled' : '✗ Disabled'}
+                            </strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span>RX Status:</span>
+                            <strong style="color: ${status.rx_enabled ? '#5cb85c' : '#e74c3c'};">
+                                ${status.rx_enabled ? '✓ Enabled' : '✗ Disabled'}
+                            </strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span>Packets Transmitted:</span>
+                            <strong style="color: #5dade2;">${status.tx_packets || 0}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span>Packets Received:</span>
+                            <strong style="color: #5dade2;">${status.rx_packets || 0}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                            <span>Neighbors Detected:</span>
+                            <strong style="color: #5dade2;">${status.neighbor_count || 0}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; padding: 8px 0;">
+                            <span>Last Update:</span>
+                            <strong style="color: #5dade2;">${new Date().toLocaleTimeString()}</strong>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('lldp-statistics').innerHTML = statsHtml;
+            } catch (error) {
+                console.error('Error loading LLDP status:', error);
+                document.getElementById('lldp-statistics').innerHTML = `
+                    <div style="color: #e74c3c; padding: 15px;">
+                        Error: ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Load topology data
+        async function loadTopology() {
+            const container = document.getElementById('topology-container');
+            container.innerHTML = '<div class="loading">Loading topology</div>';
+
+            try {
+                const interface = document.getElementById('interface-select').value;
+                const url = interface ? `/api/lldp/topology?interface=${interface}` : '/api/lldp/topology';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.error) {
+                    container.innerHTML = `<div class="error">Error: ${data.error}</div>`;
+                    return;
+                }
+
+                currentTopology = data;
+                
+                // Show warning if using mock data
+                const infoPanel = document.getElementById('info-panel');
+                if (data.using_mock_data) {
+                    infoPanel.innerHTML = `
+                        <strong style="color: #f39c12;">⚠️ Using Mock Data:</strong> 
+                        ${data.mock_reason || 'LLDP not available'}. 
+                        <button onclick="showDebugInfo()" style="margin-left: 10px; padding: 4px 12px; background: #5dade2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                            View Installation Instructions
+                        </button>
+                    `;
+                    infoPanel.style.display = 'block';
+                    infoPanel.style.background = 'rgba(243, 156, 18, 0.2)';
+                    infoPanel.style.border = '1px solid rgba(243, 156, 18, 0.3)';
+                } else {
+                    // Update local system info for real LLDP data
+                    if (data.local_info) {
+                        infoPanel.innerHTML = `
+                            <strong>Local System:</strong> <span id="local-hostname">${data.local_info.hostname || 'Unknown'}</span> 
+                            <span id="local-ip">${data.local_info.ip_addresses && data.local_info.ip_addresses.length > 0 ? `(${data.local_info.ip_addresses[0]})` : ''}</span>
+                        `;
+                        infoPanel.style.display = 'block';
+                        infoPanel.style.background = 'rgba(93, 173, 226, 0.2)';
+                        infoPanel.style.border = '1px solid rgba(93, 173, 226, 0.3)';
+                    }
+                }
+
+                // Render topology
+                renderTopology(data);
+            } catch (error) {
+                console.error('Error loading topology:', error);
+                container.innerHTML = `<div class="error">Error loading topology: ${error.message}</div>`;
+            }
+        }
+
+        // Render topology visualization
+        function renderTopology(data) {
+            const container = document.getElementById('topology-container');
+            container.innerHTML = '<svg id="topology-svg"></svg>';
+
+            const svg = d3.select('#topology-svg');
+            const width = container.clientWidth;
+            const height = 600;
+
+            svg.attr('width', width).attr('height', height);
+
+            // Clear previous content
+            svg.selectAll('*').remove();
+
+            // Create arrow marker for links
+            svg.append('defs').append('marker')
+                .attr('id', 'arrowhead')
+                .attr('viewBox', '-0 -5 10 10')
+                .attr('refX', 25)
+                .attr('refY', 0)
+                .attr('orient', 'auto')
+                .attr('markerWidth', 6)
+                .attr('markerHeight', 6)
+                .attr('xoverflow', 'visible')
+                .append('svg:path')
+                .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+                .attr('fill', '#999')
+                .style('stroke', 'none');
+
+            // Create force simulation
+            simulation = d3.forceSimulation(data.nodes)
+                .force('link', d3.forceLink(data.links)
+                    .id(d => d.id)
+                    .distance(200))
+                .force('charge', d3.forceManyBody().strength(-1000))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(50));
+
+            // Create link elements
+            const link = svg.append('g')
+                .selectAll('line')
+                .data(data.links)
+                .enter()
+                .append('line')
+                .attr('class', 'link')
+                .attr('marker-end', 'url(#arrowhead)');
+
+            // Create link labels with background
+            const linkLabelGroup = svg.append('g');
+            
+            data.links.forEach(linkData => {
+                const group = linkLabelGroup.append('g');
+                
+                // Add background rectangle for better readability
+                group.append('rect')
+                    .attr('class', 'link-label-bg')
+                    .attr('fill', 'rgba(44, 62, 80, 0.85)')
+                    .attr('rx', 4)
+                    .attr('ry', 4);
+                
+                // Add text
+                group.append('text')
+                    .attr('class', 'link-label')
+                    .text(linkData.label || '');
+            });
+            
+            const linkLabel = linkLabelGroup.selectAll('g');
+            const linkLabelText = linkLabelGroup.selectAll('text');
+            const linkLabelBg = linkLabelGroup.selectAll('rect');
+
+            // Create node groups
+            const node = svg.append('g')
+                .selectAll('g')
+                .data(data.nodes)
+                .enter()
+                .append('g')
+                .attr('class', d => `node ${d.type}`)
+                .call(d3.drag()
+                    .on('start', dragStarted)
+                    .on('drag', dragged)
+                    .on('end', dragEnded))
+                .on('click', (event, d) => showDeviceDetails(d));
+
+            // Add circles to nodes
+            node.append('circle')
+                .attr('r', 35)
+                .attr('fill', d => d.type === 'local' ? '#5cb85c' : '#5dade2')
+                .attr('stroke', d => d.type === 'local' ? '#4cae4c' : '#3498db')
+                .attr('stroke-width', 3);
+
+            // Add network device icons using SVG paths
+            node.each(function(d) {
+                const g = d3.select(this);
+                const iconColor = '#ffffff';
+                
+                if (d.type === 'local') {
+                    // Server/Computer icon
+                    g.append('rect')
+                        .attr('x', -15)
+                        .attr('y', -12)
+                        .attr('width', 30)
+                        .attr('height', 20)
+                        .attr('fill', iconColor)
+                        .attr('rx', 2);
+                    g.append('rect')
+                        .attr('x', -12)
+                        .attr('y', -9)
+                        .attr('width', 24)
+                        .attr('height', 14)
+                        .attr('fill', d.type === 'local' ? '#5cb85c' : '#5dade2');
+                    g.append('line')
+                        .attr('x1', -15)
+                        .attr('y1', -2)
+                        .attr('x2', 15)
+                        .attr('y2', -2)
+                        .attr('stroke', iconColor)
+                        .attr('stroke-width', 1);
+                    g.append('circle')
+                        .attr('cx', -8)
+                        .attr('cy', 4)
+                        .attr('r', 2)
+                        .attr('fill', iconColor);
+                    g.append('circle')
+                        .attr('cx', 0)
+                        .attr('cy', 4)
+                        .attr('r', 2)
+                        .attr('fill', iconColor);
+                    g.append('circle')
+                        .attr('cx', 8)
+                        .attr('cy', 4)
+                        .attr('r', 2)
+                        .attr('fill', iconColor);
+                } else {
+                    // Check capability for device type
+                    const capabilities = d.details?.capability || [];
+                    const isRouter = capabilities.some(cap => 
+                        typeof cap === 'string' && cap.toLowerCase().includes('router')
+                    );
+                    const isSwitch = capabilities.some(cap => 
+                        typeof cap === 'string' && (cap.toLowerCase().includes('bridge') || cap.toLowerCase().includes('switch'))
+                    );
+                    
+                    if (isRouter) {
+                        // Router icon - simplified design
+                        g.append('circle')
+                            .attr('cx', 0)
+                            .attr('cy', 0)
+                            .attr('r', 12)
+                            .attr('fill', 'none')
+                            .attr('stroke', iconColor)
+                            .attr('stroke-width', 2);
+                        
+                        // Four directional lines (simplified)
+                        [-90, 0, 90, 180].forEach((angle, idx) => {
+                            const rad = angle * Math.PI / 180;
+                            const x1 = Math.cos(rad) * 5;
+                            const y1 = Math.sin(rad) * 5;
+                            const x2 = Math.cos(rad) * 15;
+                            const y2 = Math.sin(rad) * 15;
+                            
+                            g.append('line')
+                                .attr('x1', x1)
+                                .attr('y1', y1)
+                                .attr('x2', x2)
+                                .attr('y2', y2)
+                                .attr('stroke', iconColor)
+                                .attr('stroke-width', 2)
+                                .attr('stroke-linecap', 'round');
+                            
+                            // Arrow head
+                            const arrowSize = 3;
+                            const arrowAngle1 = rad + Math.PI * 0.75;
+                            const arrowAngle2 = rad - Math.PI * 0.75;
+                            
+                            g.append('line')
+                                .attr('x1', x2)
+                                .attr('y1', y2)
+                                .attr('x2', x2 + Math.cos(arrowAngle1) * arrowSize)
+                                .attr('y2', y2 + Math.sin(arrowAngle1) * arrowSize)
+                                .attr('stroke', iconColor)
+                                .attr('stroke-width', 2)
+                                .attr('stroke-linecap', 'round');
+                            
+                            g.append('line')
+                                .attr('x1', x2)
+                                .attr('y1', y2)
+                                .attr('x2', x2 + Math.cos(arrowAngle2) * arrowSize)
+                                .attr('y2', y2 + Math.sin(arrowAngle2) * arrowSize)
+                                .attr('stroke', iconColor)
+                                .attr('stroke-width', 2)
+                                .attr('stroke-linecap', 'round');
+                        });
+                    } else if (isSwitch) {
+                        // Switch icon - grid pattern
+                        for (let i = -1; i <= 1; i++) {
+                            for (let j = -1; j <= 1; j++) {
+                                g.append('rect')
+                                    .attr('x', i * 8 - 3)
+                                    .attr('y', j * 8 - 3)
+                                    .attr('width', 6)
+                                    .attr('height', 6)
+                                    .attr('fill', iconColor)
+                                    .attr('rx', 1);
+                            }
+                        }
+                    } else {
+                        // Generic network device icon
+                        g.append('rect')
+                            .attr('x', -12)
+                            .attr('y', -10)
+                            .attr('width', 24)
+                            .attr('height', 20)
+                            .attr('fill', 'none')
+                            .attr('stroke', iconColor)
+                            .attr('stroke-width', 2)
+                            .attr('rx', 2);
+                        g.append('line')
+                            .attr('x1', -12)
+                            .attr('y1', -3)
+                            .attr('x2', 12)
+                            .attr('y2', -3)
+                            .attr('stroke', iconColor)
+                            .attr('stroke-width', 2);
+                        g.append('line')
+                            .attr('x1', -12)
+                            .attr('y1', 3)
+                            .attr('x2', 12)
+                            .attr('y2', 3)
+                            .attr('stroke', iconColor)
+                            .attr('stroke-width', 2);
+                        for (let i = -6; i <= 6; i += 4) {
+                            g.append('circle')
+                                .attr('cx', i)
+                                .attr('cy', -7)
+                                .attr('r', 1.5)
+                                .attr('fill', iconColor);
+                        }
+                    }
+                }
+            });
+
+            // Add labels to nodes
+            node.append('text')
+                .attr('dy', 50)
+                .attr('text-anchor', 'middle')
+                .style('font-size', '12px')
+                .style('font-weight', '600')
+                .style('fill', '#ffffff')
+                .text(d => d.label);
+
+            // Update positions on each tick
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+
+                // Update link labels with background
+                linkLabelText
+                    .attr('x', (d, i) => (data.links[i].source.x + data.links[i].target.x) / 2)
+                    .attr('y', (d, i) => (data.links[i].source.y + data.links[i].target.y) / 2 + 4);
+                
+                linkLabelBg.each(function(d, i) {
+                    const textNode = linkLabelText.nodes()[i];
+                    if (textNode) {
+                        const bbox = textNode.getBBox();
+                        d3.select(this)
+                            .attr('x', bbox.x - 4)
+                            .attr('y', bbox.y - 2)
+                            .attr('width', bbox.width + 8)
+                            .attr('height', bbox.height + 4);
+                    }
+                });
+
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+        }
+
+        // Drag functions
+        function dragStarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragEnded(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Show device details in modal
+        function showDeviceDetails(node) {
+            const modal = document.getElementById('device-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalBody = document.getElementById('modal-body');
+
+            modalTitle.textContent = node.label || 'Device Details';
+
+            let detailsHTML = '';
+            const details = node.details || {};
+
+            // Device name
+            if (details.name) {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <div class="detail-label">Device Name:</div>
+                        <div class="detail-value">${details.name}</div>
+                    </div>
+                `;
+            }
+
+            // Device ID
+            if (details.id) {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <div class="detail-label">Device ID:</div>
+                        <div class="detail-value">${details.id}</div>
+                    </div>
+                `;
+            }
+
+            // Description
+            if (details.description) {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <div class="detail-label">Description:</div>
+                        <div class="detail-value">${details.description}</div>
+                    </div>
+                `;
+            }
+
+            // Management IP
+            if (details['mgmt-ip']) {
+                detailsHTML += `
+                    <div class="detail-row">
+                        <div class="detail-label">Management IP:</div>
+                        <div class="detail-value">${details['mgmt-ip']}</div>
+                    </div>
+                `;
+            }
+
+            // Capabilities
+            if (details.capability && details.capability.length > 0) {
+                const capabilities = Array.isArray(details.capability) 
+                    ? details.capability 
+                    : [details.capability];
+                const capBadges = capabilities.map(cap => 
+                    `<span class="capability-badge">${cap}</span>`
+                ).join('');
+                detailsHTML += `
+                    <div class="detail-row">
+                        <div class="detail-label">Capabilities:</div>
+                        <div class="detail-value">${capBadges}</div>
+                    </div>
+                `;
+            }
+
+            // Type
+            detailsHTML += `
+                <div class="detail-row">
+                    <div class="detail-label">Node Type:</div>
+                    <div class="detail-value">
+                        <span class="status-indicator ${node.type === 'local' ? 'online' : 'offline'}">
+                            <span class="status-dot"></span>
+                            ${node.type === 'local' ? 'Local System' : 'Remote Device'}
+                        </span>
+                    </div>
+                </div>
+            `;
+
+            modalBody.innerHTML = detailsHTML || '<p>No details available</p>';
+            modal.classList.add('show');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('device-modal').classList.remove('show');
+        }
+
+        // Show debug information
+        async function showDebugInfo() {
+            const debugWindow = document.getElementById('debug-window');
+            const debugBody = document.getElementById('debug-body');
+            
+            debugWindow.classList.add('show');
+            debugBody.innerHTML = '<div class="loading">Loading debug information</div>';
+
+            try {
+                const interface = document.getElementById('interface-select').value;
+                const url = interface ? `/api/lldp/debug?interface=${interface}` : '/api/lldp/debug';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                let html = '';
+
+                // LLDP Availability Status
+                html += `
+                    <div class="debug-section">
+                        <h4>LLDP Status</h4>
+                        <div>
+                            <span class="debug-badge ${data.lldp_available ? 'success' : 'error'}">
+                                ${data.lldp_available ? '✓ LLDP Available' : '✗ LLDP Not Available'}
+                            </span>
+                            <span class="debug-badge warning">Interface: ${data.interface}</span>
+                        </div>
+                    </div>
+                `;
+
+                // Commands Tried
+                if (data.commands_tried && data.commands_tried.length > 0) {
+                    html += `
+                        <div class="debug-section">
+                            <h4>Commands Executed</h4>
+                            ${data.commands_tried.map(cmd => `<div class="debug-command">${cmd}</div>`).join('')}
+                        </div>
+                    `;
+                }
+
+                // Errors
+                if (data.errors && data.errors.length > 0) {
+                    html += `
+                        <div class="debug-section">
+                            <h4>Errors</h4>
+                            ${data.errors.map(err => `<div class="debug-badge error">${err}</div>`).join('<br>')}
+                        </div>
+                    `;
+                }
+
+                // Installation Instructions
+                if (data.installation_instructions && Object.keys(data.installation_instructions).length > 0) {
+                    const inst = data.installation_instructions;
+                    html += `
+                        <div class="debug-section">
+                            <h4>📦 Installation Instructions</h4>
+                            <p style="color: #5dade2; margin-bottom: 10px;">LLDP daemon is not installed. Choose your distribution:</p>
+                            ${inst.centos_rhel ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: #5cb85c;">CentOS / RHEL:</strong>
+                                    <div class="debug-command" style="margin-top: 5px;">${inst.centos_rhel}</div>
+                                </div>
+                            ` : ''}
+                            ${inst.ubuntu_debian ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: #5cb85c;">Ubuntu / Debian:</strong>
+                                    <div class="debug-command" style="margin-top: 5px;">${inst.ubuntu_debian}</div>
+                                </div>
+                            ` : ''}
+                            ${inst.fedora ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong style="color: #5cb85c;">Fedora:</strong>
+                                    <div class="debug-command" style="margin-top: 5px;">${inst.fedora}</div>
+                                </div>
+                            ` : ''}
+                            ${inst.note ? `
+                                <div class="debug-badge warning" style="margin-top: 10px;">ℹ️ ${inst.note}</div>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                // lldpcli JSON Output
+                if (data.raw_output && data.raw_output.lldpcli_json) {
+                    const jsonOut = data.raw_output.lldpcli_json;
+                    html += `
+                        <div class="debug-section">
+                            <h4>lldpcli JSON Output (Return Code: ${jsonOut.returncode})</h4>
+                            ${jsonOut.stdout ? `<div class="debug-content">${jsonOut.stdout}</div>` : '<div class="debug-content">No output</div>'}
+                            ${jsonOut.stderr ? `<div class="debug-content" style="color: #e74c3c;">STDERR: ${jsonOut.stderr}</div>` : ''}
+                        </div>
+                    `;
+                }
+
+                // lldpcli Text Output
+                if (data.raw_output && data.raw_output.lldpcli_text) {
+                    const textOut = data.raw_output.lldpcli_text;
+                    html += `
+                        <div class="debug-section">
+                            <h4>lldpcli Text Output (Return Code: ${textOut.returncode})</h4>
+                            ${textOut.stdout ? `<div class="debug-content">${textOut.stdout}</div>` : '<div class="debug-content">No output</div>'}
+                        </div>
+                    `;
+                }
+
+                // IP Link Output
+                if (data.raw_output && data.raw_output.ip_link) {
+                    const linkOut = data.raw_output.ip_link;
+                    html += `
+                        <div class="debug-section">
+                            <h4>Network Interface Info (Return Code: ${linkOut.returncode})</h4>
+                            <div class="debug-content">${linkOut.stdout || 'No output'}</div>
+                        </div>
+                    `;
+                }
+
+                // lldpd Service Status
+                if (data.raw_output && data.raw_output.lldpd_status) {
+                    const status = data.raw_output.lldpd_status;
+                    html += `
+                        <div class="debug-section">
+                            <h4>lldpd Service Status</h4>
+                            <div>
+                                <span class="debug-badge ${status.running ? 'success' : 'error'}">
+                                    ${status.running ? '✓ Service Running' : '✗ Service Not Running'}
+                                </span>
+                            </div>
+                            <div class="debug-content">${status.stdout || 'No status information'}</div>
+                        </div>
+                    `;
+                }
+
+                // Parsed JSON (if available)
+                if (data.raw_output && data.raw_output.parsed_json) {
+                    html += `
+                        <div class="debug-section">
+                            <h4>Parsed LLDP Data</h4>
+                            <div class="debug-content">${JSON.stringify(data.raw_output.parsed_json, null, 2)}</div>
+                        </div>
+                    `;
+                }
+
+                debugBody.innerHTML = html;
+            } catch (error) {
+                debugBody.innerHTML = `<div class="error">Error loading debug information: ${error.message}</div>`;
+            }
+        }
+
+        // Close debug window
+        function closeDebugWindow() {
+            document.getElementById('debug-window').classList.remove('show');
+        }
+
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Configuration button
+            const configBtn = document.getElementById('config-btn');
+            if (configBtn) {
+                configBtn.addEventListener('click', showConfigModal);
+            }
+            
+            // Config modal close button
+            const closeConfigBtn = document.getElementById('close-config');
+            if (closeConfigBtn) {
+                closeConfigBtn.addEventListener('click', closeConfigModal);
+            }
+            
+            // Close config modal when clicking outside
+            const configModal = document.getElementById('config-modal');
+            if (configModal) {
+                configModal.addEventListener('click', function(event) {
+                    if (event.target === configModal) {
+                        closeConfigModal();
+                    }
+                });
+            }
+        });
+
+        // Load and display version
+        function loadVersion() {
+            fetch('/VERSION')
+                .then(response => response.text())
+                .then(version => {
+                    const versionDisplay = document.getElementById('versionDisplay');
+                    if (versionDisplay) {
+                        versionDisplay.textContent = version.trim();
+                    }
+                })
+                .catch(err => {
+                    console.log('Failed to load version:', err);
+                });
+        }
+
+        // Load version on page load
+        loadVersion();
+    </script>
+</body>
+</html>

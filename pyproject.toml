@@ -1,0 +1,7 @@
+[project]
+name = "nui"
+version = "0.1.0"
+description = "NUI web and lab monitoring tools"
+readme = "docs/README.md"
+requires-python = ">=3.9"
+dependencies = []

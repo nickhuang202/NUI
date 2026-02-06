@@ -1,0 +1,26 @@
+{
+  "name": "Evt_Test",
+  "config": {
+    "platform": "MINIPACK3BA",
+    "script": "run_all_test.sh",
+    "bin": "fboss_bins_bcm_xgs_20260204_10_44_07_2ed872e42b_SAI_13_3_0_GA_b92a74e9_20260112_tar_gz.tar.zst",
+    "test_level": "",
+    "topology": "default",
+    "topology_file": "montblanc.materialized_800G_JSON",
+    "clean_fboss": false,
+    "test_items": {
+      "sai_test": false,
+      "sai_t0": false,
+      "sai_t1": false,
+      "sai_t2": false,
+      "agent_hw_test": false,
+      "agent_t0": false,
+      "agent_t1": false,
+      "agent_t2": false,
+      "link_test": true,
+      "link_t0": true,
+      "link_t1": false,
+      "evt_exit": false
+    }
+  }
+}

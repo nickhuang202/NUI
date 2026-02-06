@@ -1,0 +1,1 @@
+dist/nui_full_install/nui_offline_installer.tar.gz filter=lfs diff=lfs merge=lfs -text

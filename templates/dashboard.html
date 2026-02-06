@@ -1,0 +1,4422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Test Report Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3d5a6c 50%, #2c3e50 100%);
+            margin: 0;
+            padding: 20px;
+            color: #ffffff;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: rgba(52, 73, 94, 0.8);
+            padding: 20px 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            z-index: 1000;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .version-badge {
+            background: rgba(92, 184, 92, 0.2);
+            color: #5cb85c;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            border: 1px solid #5cb85c;
+            margin-left: 15px;
+        }
+
+        .version-display {
+            color: #4CAF50;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 6px 12px;
+            background: rgba(76, 175, 80, 0.1);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            border-radius: 6px;
+        }
+
+        .card {
+            background: rgba(52, 73, 94, 0.8);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 600;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(92, 184, 92, 0.3);
+        }
+
+        h3 {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th,
+        td {
+            padding: 14px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            background-color: rgba(92, 184, 92, 0.2);
+            color: #5cb85c;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            color: #e8ecef;
+            font-size: 14px;
+        }
+
+        td a {
+            color: #5dade2;
+            text-decoration: none;
+        }
+
+        td a:hover {
+            color: #85c1e9;
+            text-decoration: underline;
+        }
+
+        .charts-grid {
+            display: -ms-flexbox;
+            display: flex;
+            -ms-flex-direction: column;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .test-row {
+            display: -ms-grid;
+            display: grid;
+            -ms-grid-columns: 1fr 25px 1fr 25px 1fr;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            column-gap: 25px;
+            row-gap: 25px;
+            width: 100%;
+        }
+
+        .test-row.full-width {
+            -ms-grid-columns: 1fr;
+            grid-template-columns: 1fr;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 240px;
+            width: 240px;
+            margin: 0 auto;
+        }
+
+        .chart-card {
+            text-align: center;
+            position: relative;
+            display: block;
+            min-width: 0;
+            -ms-flex: 1 1 auto;
+            flex: 1 1 auto;
+        }
+
+        .chart-card.empty-slot {
+            opacity: 0.2;
+            -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=20)";
+            pointer-events: none;
+        }
+
+        .chart-card.empty-slot .chart-container canvas {
+            opacity: 0.3;
+            -ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=30)";
+        }
+
+        .chart-card.empty-slot h3 {
+            color: rgba(255, 255, 255, 0.25);
+        }
+
+        .chart-card.empty-slot .trend-btn {
+            opacity: 0.3;
+        }
+
+        .chart-card.empty-slot .test-time {
+            display: none;
+        }
+
+        .chart-card.hidden {
+            display: none !important;
+        }
+
+        .trend-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .trend-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+        }
+
+        .trend-btn:active {
+            transform: translateY(0);
+        }
+
+        .download-report-btn {
+            position: absolute;
+            top: 15px;
+            right: 135px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+            z-index: 11;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .download-report-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.5);
+            background: linear-gradient(135deg, #66BB6A 0%, #43A047 100%);
+        }
+
+        .download-report-btn:active {
+            transform: translateY(0);
+        }
+
+        .download-report-btn:disabled {
+            background: linear-gradient(135deg, #757575 0%, #616161 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        select {
+            padding: 10px 16px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background-color: rgba(52, 73, 94, 0.6);
+            color: #ffffff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        select:hover {
+            border-color: #5cb85c;
+            background-color: rgba(52, 73, 94, 0.8);
+        }
+
+        select:focus {
+            border-color: #5cb85c;
+            box-shadow: 0 0 0 3px rgba(92, 184, 92, 0.2);
+        }
+
+        button {
+            padding: 11px 24px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        button:first-of-type {
+            background: linear-gradient(135deg, #5cb85c 0%, #4caf50 100%);
+        }
+
+        button:first-of-type:hover {
+            background: linear-gradient(135deg, #4caf50 0%, #449d44 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(92, 184, 92, 0.4);
+        }
+
+        button:nth-of-type(2) {
+            background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+        }
+
+        button:nth-of-type(2):hover {
+            background: linear-gradient(135deg, #5a6268 0%, #545b62 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .test-time {
+            display: block;
+            color: #FFD700;
+            font-size: 14px;
+            font-weight: 700;
+            margin: 0 0 10px 0;
+            text-align: center;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
+        .topology-badge {
+            display: inline-block;
+            padding: 0;
+            margin-left: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #5cb85c;
+            border: none;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .pass {
+            background: rgba(92, 184, 92, 0.2);
+            color: #5cb85c;
+            border: 1px solid #5cb85c;
+        }
+
+        .fail {
+            background: rgba(217, 83, 79, 0.2);
+            color: #d9534f;
+            border: 1px solid #d9534f;
+        }
+
+        #debugParams {
+            margin-bottom: 20px;
+        }
+
+        #debugParams .card {
+            background: rgba(52, 73, 94, 0.9);
+            color: #5cb85c;
+            font-family: 'Courier New', monospace;
+            border: 1px solid rgba(92, 184, 92, 0.3);
+        }
+
+        #debugParams h3 {
+            color: #5cb85c;
+        }
+
+        #debugLogContent {
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            color: #e8ecef;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(92, 184, 92, 0.4);
+            border-radius: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(92, 184, 92, 0.6);
+        }
+
+        .platform-tabs {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .platform-tab {
+            padding: 12px 28px;
+            border-radius: 8px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(52, 73, 94, 0.4);
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .platform-tab.active {
+            background: linear-gradient(135deg, #5cb85c 0%, #4caf50 100%);
+            color: #ffffff;
+            border-color: #5cb85c;
+            box-shadow: 0 4px 15px rgba(92, 184, 92, 0.3);
+        }
+
+        .platform-tab:hover:not(.active) {
+            border-color: rgba(92, 184, 92, 0.6);
+            background: rgba(52, 73, 94, 0.6);
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            margin: 2% auto;
+            padding: 0;
+            border: 2px solid rgba(92, 184, 92, 0.3);
+            width: 95%;
+            max-width: 1800px;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: slideDown 0.3s ease;
+            overflow-x: hidden;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 30px;
+            background: rgba(52, 73, 94, 0.95);
+            border-bottom: 2px solid rgba(92, 184, 92, 0.3);
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            padding: 0;
+            border: none;
+            color: #5cb85c;
+            font-size: 24px;
+            flex: 1;
+        }
+
+        .modal-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+        .sort-btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            border: 2px solid rgba(92, 184, 92, 0.3);
+            background: rgba(52, 73, 94, 0.6);
+            color: #e8ecef;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .sort-btn:hover {
+            border-color: #5cb85c;
+            background: rgba(92, 184, 92, 0.2);
+            color: #5cb85c;
+        }
+
+        .sort-btn.active {
+            background: linear-gradient(135deg, #5cb85c 0%, #4caf50 100%);
+            color: #ffffff;
+            border-color: #5cb85c;
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            line-height: 1;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #5cb85c;
+            transform: scale(1.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .test-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .test-table th {
+            background-color: rgba(52, 73, 94, 0.95);
+            color: #5cb85c;
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            border-bottom: 2px solid rgba(92, 184, 92, 0.3);
+        }
+
+        .test-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #e8ecef;
+        }
+
+        .test-table tr:hover {
+            background-color: rgba(92, 184, 92, 0.1);
+        }
+
+        .test-table .result-pass {
+            color: #5cb85c;
+            font-weight: 600;
+        }
+
+        .test-table .result-fail {
+            color: #d9534f;
+            font-weight: 600;
+        }
+
+        .clickable-chart {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .clickable-chart:hover {
+            transform: scale(1.05);
+        }
+
+        .chart-card.clickable:hover h3 {
+            color: #5cb85c;
+        }
+
+        .note-btn {
+            padding: 6px 12px;
+            background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .note-btn:hover {
+            background: linear-gradient(135deg, #FFB74D 0%, #FF9800 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.4);
+        }
+
+        .note-btn.has-note {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+        }
+
+        .note-btn.has-note:hover {
+            background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
+        }
+
+        .view-log-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .view-log-btn:hover {
+            background: linear-gradient(135deg, #42A5F5 0%, #2196F3 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+        }
+
+        .note-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%) translateY(-8px);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-width: 300px;
+            z-index: 10000;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .note-btn:hover .note-tooltip {
+            opacity: 1;
+        }
+
+        #noteEditorModal .modal-content {
+            max-width: 600px;
+        }
+
+        .note-editor-textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            resize: vertical;
+        }
+
+        .note-editor-textarea:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        .note-editor-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        .note-save-btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .note-save-btn:hover {
+            background: linear-gradient(135deg, #66BB6A 0%, #4CAF50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .note-cancel-btn {
+            padding: 10px 24px;
+            background: rgba(52, 73, 94, 0.8);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .note-cancel-btn:hover {
+            background: rgba(52, 73, 94, 1);
+            border-color: #95a5a6;
+        }
+
+
+
+        .download-btn {
+            display: inline-block;
+            padding: 12px 28px;
+            background: linear-gradient(135deg, #5cb85c 0%, #4caf50 100%);
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 10px rgba(92, 184, 92, 0.3);
+        }
+
+        .download-btn:hover {
+            background: linear-gradient(135deg, #4caf50 0%, #449d44 100%);
+            box-shadow: 0 5px 15px rgba(92, 184, 92, 0.5);
+            transform: translateY(-2px);
+            color: #ffffff;
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Date Picker Styles */
+        .date-picker-container {
+            position: relative;
+            display: inline-block;
+            z-index: 10000;
+        }
+
+        .date-input {
+            padding: 10px 15px;
+            font-size: 14px;
+            border: 2px solid rgba(92, 184, 92, 0.5);
+            border-radius: 8px;
+            background: rgba(52, 73, 94, 0.6);
+            color: #ffffff;
+            cursor: pointer;
+            font-weight: 600;
+            min-width: 150px;
+            transition: all 0.3s;
+        }
+
+        .date-input:hover {
+            border-color: #5cb85c;
+            background: rgba(52, 73, 94, 0.8);
+        }
+
+        .calendar-popup {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            z-index: 9999;
+            background: linear-gradient(135deg, #34495e 0%, #2c3e50 100%);
+            border: 2px solid #5cb85c;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+            min-width: 320px;
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ecf0f1;
+        }
+
+        .calendar-nav-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 5px 10px;
+            transition: all 0.2s;
+        }
+
+        .calendar-nav-btn:hover {
+            color: #5cb85c;
+            transform: scale(1.2);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-weekday {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            color: #95a5a6;
+            padding: 8px 0;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ecf0f1;
+        }
+
+        .calendar-day:hover:not(.disabled):not(.empty) {
+            background: rgba(92, 184, 92, 0.3);
+            transform: scale(1.1);
+        }
+
+        .calendar-day.disabled {
+            color: #555;
+            cursor: not-allowed;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .calendar-day.available {
+            background: rgba(92, 184, 92, 0.2);
+            border: 1px solid #5cb85c;
+            font-weight: bold;
+        }
+
+        .calendar-day.available:hover {
+            background: rgba(92, 184, 92, 0.4);
+            box-shadow: 0 0 12px rgba(92, 184, 92, 0.6);
+        }
+
+        .calendar-day.selected {
+            background: #5cb85c;
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 0 15px rgba(92, 184, 92, 0.8);
+        }
+
+        .calendar-day.empty {
+            background: transparent;
+            cursor: default;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #2196F3;
+        }
+
+        /* Collapsible Section Styles */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 8px 12px;
+        }
+
+        .collapsible-header:hover {
+            background: rgba(92, 184, 92, 0.15) !important;
+        }
+
+        .collapsible-header::before {
+            content: '▼';
+            display: inline-block;
+            margin-right: 8px;
+            transition: transform 0.3s ease;
+            font-size: 12px;
+        }
+
+        .collapsible-header.collapsed::before {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            transition: all 0.3s ease;
+        }
+
+        .collapsible-content.collapsed {
+            display: none;
+        }
+
+        .collapsible-content tr {
+            transition: all 0.3s ease;
+        }
+
+        /* Sortable ghost class */
+        .sortable-ghost {
+            opacity: 0.4;
+            background: rgba(92, 184, 92, 0.4) !important;
+            border: 2px dashed #5cb85c !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- AVARUNTAR Logo Banner -->
+        <div
+            style="display: flex; align-items: center; justify-content: center; padding: 20px 0 10px 0; position: relative;">
+            <img src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjE1MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGV4dCB4PSIyMDAiIHk9Ijc1IiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iNDgiIGZvbnQtd2VpZ2h0PSJib2xkIiBmaWxsPSIjNENBRjUwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5BVkFSVU5UQVI8L3RleHQ+PHRleHQgeD0iMjAwIiB5PSIxMTAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk1YTVhNiIgdGV4dC1hbmNob3I9Im1pZGRsZSI+QWNjdG9uIFZlcnNhdGlsZSBBdXRvbWF0ZWQgUlVOIFRlc3RpbmcgQW5kIFJlcG9ydGluZzwvdGV4dD48L3N2Zz4="
+                alt="AVARUNTAR" style="max-width: 280px; width: 100%; height: auto;">
+            <div class="version-display" id="versionDisplay" style="position: absolute; right: 20px;"></div>
+        </div>
+
+        <div class="header">
+            <h1>Test Report Dashboard</h1>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <a href="/"
+                    style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; text-decoration: none; display: inline-block; transition: all 0.3s;">
+                    🏠 Back Home
+                </a>
+                <a href="/lldp_dashboard"
+                    style="padding: 10px 20px; background: #9b59b6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; text-decoration: none; display: none; transition: all 0.3s;">
+                    🔍 LLDP Discovery
+                </a>
+                <button id="debugToggleBtn" onclick="toggleDebug()"
+                    style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.3s;">
+                    🐛 Debug ON
+                </button>
+                <button id="resetLayoutBtn" onclick="resetLayout()"
+                    style="padding: 10px 20px; background: #e67e22; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.3s; display: none;">
+                    🔄 Reset Layout
+                </button>
+                <div
+                    style="display: flex; align-items: center; background: rgba(76, 175, 80, 0.2); border: 2px solid #4CAF50; border-radius: 8px; padding: 8px 15px;">
+                    <span style="color: #4CAF50; font-weight: bold; margin-right: 8px;">📍</span>
+                    <span id="platformDisplay"
+                        style="color: #4CAF50; font-weight: bold; font-size: 16px;">Loading...</span>
+                </div>
+                <select id="platformSelect" style="display: none;">
+                    <option value="">-- Select Platform --</option>
+                    <option value="MINIPACK3BA">MINIPACK3BA</option>
+                    <option value="MINIPACK3N">MINIPACK3N</option>
+                    <option value="WEDGE800BACT">WEDGE800BACT</option>
+                    <option value="WEDGE800CACT">WEDGE800CACT</option>
+                </select>
+                <div class="date-picker-container">
+                    <input type="text" id="dateInput" class="date-input" readonly placeholder="Select Date..."
+                        onclick="toggleCalendar()">
+                    <div id="calendarPopup" class="calendar-popup">
+                        <div class="calendar-header">
+                            <button class="calendar-nav-btn" onclick="previousMonth()">◀</button>
+                            <span id="currentMonthYear"
+                                style="flex: 1; text-align: center; font-weight: bold; font-size: 14px;"></span>
+                            <button class="calendar-nav-btn" onclick="nextMonth()">▶</button>
+                        </div>
+                        <div class="calendar-grid">
+                            <div class="calendar-weekday">S</div>
+                            <div class="calendar-weekday">M</div>
+                            <div class="calendar-weekday">T</div>
+                            <div class="calendar-weekday">W</div>
+                            <div class="calendar-weekday">T</div>
+                            <div class="calendar-weekday">F</div>
+                            <div class="calendar-weekday">S</div>
+                            <div id="calendarDays"></div>
+                        </div>
+                    </div>
+                </div>
+                <button onclick="loadDashboard()" style="display: none;">Load</button>
+                <button onclick="toggleDebug()" style="background: #6c757d; display: none;">Debug Logs</button>
+            </div>
+        </div>
+
+        <div id="debugParams" style="display:none; margin-bottom: 20px;">
+            <div class="card" style="background: #333; color: #0f0; font-family: monospace;">
+                <h3>Debug Logs</h3>
+                <div id="debugLogContent"
+                    style="max-height: 300px; overflow-y: auto; white-space: pre-wrap; font-size: 12px;"></div>
+            </div>
+        </div>
+
+        <div id="dashboardContent" style="display: none;">
+            <!-- Version Info -->
+            <div class="card">
+                <h2>Version Info</h2>
+                <table id="versionTable">
+                    <!-- Populated by JS -->
+                </table>
+            </div>
+
+            <!-- Charts -->
+            <div id="sortable-grid" class="charts-grid">
+                <!-- Total Test Cycle Status - Full Width -->
+                <div class="test-row full-width">
+                    <div class="card chart-card clickable" onclick="showAllTestDetails()" data-id="total-cycle">
+                        <button class="download-report-btn" onclick="event.stopPropagation(); downloadOrganizedReport()"
+                            id="downloadReportBtn"
+                            title="Download organized test report (structured by test level, category, and topology)">
+                            📦 G report
+                        </button>
+                        <button class="trend-btn" onclick="event.stopPropagation(); show7DayTrend()"
+                            style="background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);">📈 Trend</button>
+                        <h3>Total Test Cycle Status <span id="testDuration"
+                                style="color: #5cb85c; font-size: 16px; margin-left: 15px;"></span></h3>
+                        <div class="chart-container">
+                            <canvas id="allTestChart"></canvas>
+                        </div>
+                        <div id="allTestLegend"></div>
+                    </div>
+                </div>
+
+                <!-- SAI Tests Row -->
+                <div class="test-row" id="sai-tests-row" style="display: none;">
+                    <!-- SAI Test T0 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('sai', 't0')" data-id="sai-t0">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('sai', 't0', 'SAI Test T0')">📈
+                            Trend</button>
+                        <span id="saiT0Time" class="test-time"></span>
+                        <h3>SAI Test T0 <span class="test-label">(sai)</span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="saiTestT0Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- SAI Test T1 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('sai', 't1')" data-id="sai-t1">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('sai', 't1', 'SAI Test T1')">📈
+                            Trend</button>
+                        <span id="saiT1Time" class="test-time"></span>
+                        <h3>SAI Test T1 <span class="test-label">(sai)</span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="saiTestT1Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- SAI Test T2 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('sai', 't2')" data-id="sai-t2">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('sai', 't2', 'SAI Test T2')">📈
+                            Trend</button>
+                        <span id="saiT2Time" class="test-time"></span>
+                        <h3>SAI Test T2 <span class="test-label">(sai)</span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="saiTestT2Chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent HW Tests Row -->
+                <div class="test-row" id="agent-tests-row" style="display: none;">
+                    <!-- Agent HW Test T0 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('agent_hw', 't0')"
+                        data-id="agent-t0">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('agent_hw', 't0', 'Agent HW Test T0')">📈
+                            Trend</button>
+                        <span id="agentT0Time" class="test-time"></span>
+                        <h3>Agent HW Test T0 <span class="test-label">(sai)</span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="agentTestT0Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Agent HW Test T1 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('agent_hw', 't1')"
+                        data-id="agent-t1">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('agent_hw', 't1', 'Agent HW Test T1')">📈
+                            Trend</button>
+                        <span id="agentT1Time" class="test-time"></span>
+                        <h3>Agent HW Test T1 <span class="test-label">(sai)</span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="agentTestT1Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Agent HW Test T2 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('agent_hw', 't2')"
+                        data-id="agent-t2">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('agent_hw', 't2', 'Agent HW Test T2')">📈
+                            Trend</button>
+                        <span id="agentT2Time" class="test-time"></span>
+                        <h3>Agent HW Test T2 <span class="test-label">(sai)</span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="agentTestT2Chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Link Tests Row (T0, T1, T2) -->
+                <div class="test-row" id="link-tests-row" style="display: none;">
+                    <!-- Link Test T0 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 't0')" data-id="link-t0">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 't0', 'Link Test T0')">📈
+                            Trend</button>
+                        <span id="linkT0Time" class="test-time"></span>
+                        <h3>Link Test T0 <span id="linkT0Topology" class="topology-badge"></span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="linkTestT0Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Link Test T1 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 't1')" data-id="link-t1">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 't1', 'Link Test T1')">📈
+                            Trend</button>
+                        <span id="linkT1Time" class="test-time"></span>
+                        <h3>Link Test T1 <span id="linkT1Topology" class="topology-badge"></span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="linkTestT1Chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Link Test T2 -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 't2')" data-id="link-t2">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 't2', 'Link Test T2')">📈
+                            Trend</button>
+                        <span id="linkT2Time" class="test-time"></span>
+                        <h3>Link Test T2 <span id="linkT2Topology" class="topology-badge"></span></h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="linkTestT2Chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Link Test Row -->
+                <div class="test-row" id="link-test-row" style="display: none;">
+                    <!-- Link Test (from LINKTEST_LOG) -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link_test', 'default')"
+                        data-id="link-test">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link_test', 'default', 'Link Test')">📈
+                            Trend</button>
+                        <span id="linkTestTime" class="test-time"></span>
+                        <h3>Link Test</h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="linkTestChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EVT Tests Row (All EVT topologies) -->
+                <div class="test-row" id="evt-tests-row" style="display: none;">
+                    <!-- EVT Optics One -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 'ev_optics_one')"
+                        data-id="evt-optics-one">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 'ev_optics_one', 'EVT Optics One')">📈
+                            Trend</button>
+                        <span id="evtOpticsOneTime" class="test-time"></span>
+                        <h3>EVT Optics One</h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="evtOpticsOneChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- EVT Optics Two -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 'ev_optics_two')"
+                        data-id="evt-optics-two">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 'ev_optics_two', 'EVT Optics Two')">📈
+                            Trend</button>
+                        <span id="evtOpticsTwoTime" class="test-time"></span>
+                        <h3>EVT Optics Two</h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="evtOpticsTwoChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- EVT Copper -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 'ev_copper')"
+                        data-id="evt-copper">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 'ev_copper', 'EVT Copper')">📈
+                            Trend</button>
+                        <span id="evtCopperTime" class="test-time"></span>
+                        <h3>EVT Copper</h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="evtCopperChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- EVT Default -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 'ev_default')"
+                        data-id="evt-default">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 'ev_default', 'EVT Default')">📈
+                            Trend</button>
+                        <span id="evtDefaultTime" class="test-time"></span>
+                        <h3>EVT Default</h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="evtDefaultChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- EVT 400G -->
+                    <div class="card chart-card clickable" onclick="showTestDetails('link', 'ev_400g')"
+                        data-id="evt-400g">
+                        <button class="trend-btn"
+                            onclick="event.stopPropagation(); showCaseTrend('link', 'ev_400g', 'EVT 400G')">📈
+                            Trend</button>
+                        <span id="evt400gTime" class="test-time"></span>
+                        <h3>EVT 400G</h3>
+                        <div class="chart-container clickable-chart">
+                            <canvas id="evt400gChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for 7-Day Trend -->
+    <div id="trendModal" class="modal">
+        <div class="modal-content" style="width: 95%; max-width: 1800px; overflow-x: hidden;">
+            <div class="modal-header">
+                <h2 id="trendModalTitle">Test Results Trend</h2>
+                <div class="modal-controls">
+                    <button class="sort-btn active" onclick="changeTrendRange('week')" id="trendWeek">Week</button>
+                    <button class="sort-btn" onclick="changeTrendRange('month')" id="trendMonth">Month</button>
+                    <button class="sort-btn" onclick="changeTrendRange('year')" id="trendYear">Year</button>
+                    <button class="sort-btn" onclick="exportTrendToExcel()"
+                        style="background-color: #28a745; border-color: #28a745; color: white;">Export Excel</button>
+                </div>
+                <span class="close" onclick="closeTrendModal()">&times;</span>
+            </div>
+
+            <div class="modal-body">
+                <div id="topCloseDetailsContainer" style="display: none; text-align: right; margin-bottom: 5px;">
+                    <button onclick="closeTrendDetails()" class="note-cancel-btn"
+                        style="padding: 6px 16px; font-size: 13px;">Close Details</button>
+                </div>
+                <div style="height: 400px; margin-bottom: 30px;">
+                    <canvas id="trendChart"></canvas>
+                </div>
+
+                <!-- Details Section (shown when clicking on a point) -->
+                <div id="trendDetailsSection" style="display: none;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid rgba(92, 184, 92, 0.3);">
+                        <h3 id="trendDetailTitle" style="margin: 0;"></h3>
+                    </div>
+
+                    <!-- Version Info -->
+                    <div id="trendVersionInfoSection"
+                        style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none;">
+                        <h4 style="margin: 0 0 10px 0; color: #5cb85c;" id="trendVersionTitle">Version Info</h4>
+                        <div id="trendVersionContent"></div>
+                    </div>
+
+                    <!-- Trend Diff Section -->
+                    <div id="trendDiffSection"
+                        style="display: none; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px dashed rgba(255, 255, 255, 0.3);">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3 style="margin: 0;">Diff with Previous Day</h3>
+                            <button onclick="closeTrendDiff()" class="note-cancel-btn"
+                                style="padding: 4px 12px; font-size: 12px;">Close Diff</button>
+                        </div>
+
+                        <div id="trendDiffLoading" style="text-align: center; padding: 20px; display: none;">
+                            <div
+                                style="display: inline-block; width: 30px; height: 30px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite;">
+                            </div>
+                            <p>Loading diff data...</p>
+                        </div>
+
+                        <div id="trendDiffContent" style="display: none;">
+                            <!-- New Failures -->
+                            <div
+                                style="margin-bottom: 20px; background: rgba(217, 83, 79, 0.1); padding: 15px; border-radius: 6px; border: 1px solid rgba(217, 83, 79, 0.3);">
+                                <h4 style="color: #ff6b6b; margin-top: 0; margin-bottom: 10px;">New Failures (<span
+                                        id="diffNewFailCount">0</span>)</h4>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    <table class="test-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Test Name</th>
+                                                <th>Category / Level</th>
+                                                <th>Start</th>
+                                                <th>End</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="diffNewFailBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Fixed Items -->
+                            <div
+                                style="background: rgba(92, 184, 92, 0.1); padding: 15px; border-radius: 6px; border: 1px solid rgba(92, 184, 92, 0.3);">
+                                <h4 style="color: #5cb85c; margin-top: 0; margin-bottom: 10px;">Fixed (<span
+                                        id="diffFixedCount">0</span>)</h4>
+                                <div style="max-height: 200px; overflow-y: auto;">
+                                    <table class="test-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Test Name</th>
+                                                <th>Category / Level</th>
+                                                <th>Start</th>
+                                                <th>End</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="diffFixedBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Test Changes (Added/Removed) -->
+                        <div
+                            style="background: rgba(91, 192, 222, 0.1); padding: 15px; border-radius: 6px; border: 1px solid rgba(91, 192, 222, 0.3); margin-top: 15px;">
+                            <h4 style="color: #5bc0de; margin-top: 0; margin-bottom: 10px;">Test Changes (+<span
+                                    id="diffAddedCount">0</span> / -<span id="diffRemovedCount">0</span>)</h4>
+                            <div style="max-height: 200px; overflow-y: auto;">
+                                <table class="test-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Test Name</th>
+                                            <th>Category / Level</th>
+                                            <th>Type</th>
+                                            <th>Result</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="diffChangesBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Test Items Table -->
+                <div style="max-height: 400px; overflow-y: auto;">
+                    <table class="test-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">#</th>
+                                <th>Test Name</th>
+                                <th style="width: 120px;">Result</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trendDetailsBody">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Modal for Test Details -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Test Details</h2>
+                <div class="modal-controls">
+                    <button class="sort-btn" onclick="sortTests('all')" id="sortAll">All</button>
+                    <button class="sort-btn" onclick="sortTests('pass')" id="sortPass">Pass</button>
+                    <button class="sort-btn" onclick="sortTests('fail')" id="sortFail">Fail</button>
+                </div>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+
+            <div class="modal-body">
+
+                <table class="test-table" id="testDetailsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">#</th>
+                            <th>Test Name</th>
+                            <th style="width: 120px;">Result</th>
+                            <th style="width: 300px;">Note Content</th>
+                            <th style="width: 150px;">Action</th>
+                            <th style="width: 150px;" id="logDetailHeader">LOG DETAIL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="testDetailsBody">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+                <div id="downloadSection"
+                    style="margin-top: 25px; padding-top: 20px; border-top: 2px solid rgba(92, 184, 92, 0.3); text-align: center; display: flex; gap: 15px; justify-content: center;">
+                    <button onclick="downloadTableAsCSV()" class="download-btn"
+                        style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); text-decoration: none; border: none; cursor: pointer;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Download CSV
+                    </button>
+                    <button onclick="downloadTestLog()" class="download-btn"
+                        style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); text-decoration: none; border: none; cursor: pointer;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download log
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Editor Modal -->
+    <div id="noteEditorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Note</h2>
+                <span class="close" onclick="closeNoteEditor()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 15px;">
+                    <label style="color: #95a5a6; font-size: 13px; display: block; margin-bottom: 5px;">Test
+                        Name:</label>
+                    <div id="noteTestName"
+                        style="color: white; font-weight: bold; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+                    </div>
+                </div>
+                <div>
+                    <label style="color: #95a5a6; font-size: 13px; display: block; margin-bottom: 5px;">Note:</label>
+                    <textarea id="noteEditorTextarea" class="note-editor-textarea"
+                        placeholder="Enter your note here..."></textarea>
+                </div>
+                <div class="note-editor-actions">
+                    <button class="note-cancel-btn" onclick="closeNoteEditor()">Cancel</button>
+                    <button class="note-save-btn" onclick="saveNoteFromEditor()">💾 Save Note</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Log Detail Debug Modal -->
+    <div id="logDetailModal" class="modal">
+        <div class="modal-content"
+            style="width: 98vw; height: 98vh; max-width: 98vw; max-height: 98vh; margin: 1vh auto; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <h2 id="logDetailTitle">Test Log Detail</h2>
+                <span class="close" onclick="closeLogDetailModal()">&times;</span>
+            </div>
+            <div class="modal-body" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div style="margin-bottom: 20px; flex-shrink: 0;">
+                    <h3 style="margin: 0 0 10px 0; color: #5cb85c;">Test Information</h3>
+                    <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px;">
+                        <div style="display: flex; gap: 30px; flex-wrap: wrap;">
+                            <div>
+                                <strong style="color: #95a5a6;">Test Name:</strong>
+                                <span id="logDetailTestName" style="color: white; margin-left: 10px;"></span>
+                            </div>
+                            <div>
+                                <strong style="color: #95a5a6;">Status:</strong>
+                                <span id="logDetailStatus"
+                                    style="margin-left: 10px; padding: 4px 12px; border-radius: 4px; font-weight: bold;"></span>
+                            </div>
+                            <div>
+                                <strong style="color: #95a5a6;">Category:</strong>
+                                <span id="logDetailCategory" style="color: white; margin-left: 10px;"></span>
+                            </div>
+                            <div>
+                                <strong style="color: #95a5a6;">Level:</strong>
+                                <span id="logDetailLevel" style="color: white; margin-left: 10px;"></span>
+                            </div>
+                            <div>
+                                <strong style="color: #95a5a6;">Size:</strong>
+                                <span id="logDetailSize" style="color: white; margin-left: 10px;"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 15px; flex-shrink: 0;">
+                    <h3 style="margin: 0 0 10px 0; color: #5cb85c;">Full Log Content <span
+                            style="font-size: 14px; color: #95a5a6; font-weight: normal;">(Use Ctrl+F to search)</span>
+                    </h3>
+                </div>
+
+                <div style="flex: 1; overflow: hidden; display: flex; flex-direction: column;">
+                    <div
+                        style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 8px; flex: 1; overflow-y: auto; font-family: 'Courier New', monospace; font-size: 12px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word;">
+                        <div id="logDetailContent" style="color: #ecf0f1;"></div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top: 20px; text-align: center; padding-top: 15px; border-top: 2px solid rgba(92, 184, 92, 0.3); flex-shrink: 0;">
+                    <button id="downloadLogTxtBtn" class="download-btn" onclick="downloadLogAsTxt()"
+                        style="background: linear-gradient(135deg, #2196F3 0%, #1976D2 100%); font-size: 16px; padding: 12px 32px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        Download as TXT
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Init
+        // Register Chart.js datalabels plugin
+        Chart.register(ChartDataLabels);
+        let currentDashboardData = null;
+        let charts = {};
+        let currentTestItems = [];
+        let currentSortFilter = 'all';
+        let currentCategory = '';
+        let currentLevel = '';
+        let currentPlatform = '';
+        let currentDate = '';
+        let availableDates = [];
+        let selectedDate = null;
+        let currentDisplayMonth = new Date();
+        let debugLogs = [];
+        let notesCache = {}; // Cache for notes loaded from server
+
+        // Load notes from server
+        function loadNotesFromServer() {
+            if (!currentPlatform || !currentDate) {
+                addDebugLog('Cannot load notes: platform or date not set');
+                return;
+            }
+
+            fetch(`/api/dashboard/notes/${currentPlatform}/${currentDate}`)
+                .then(r => r.json())
+                .then(data => {
+                    notesCache = data || {};
+                    addDebugLog(`Loaded ${Object.keys(notesCache).length} notes from server for ${currentPlatform}/${currentDate}`);
+                })
+                .catch(err => {
+                    console.error('Error loading notes:', err);
+                    notesCache = {};
+                });
+        }
+
+        // Save note to server
+        function saveNoteToServer(noteKey, noteValue) {
+            if (!currentPlatform || !currentDate) {
+                alert('Cannot save note: platform or date not set');
+                return Promise.resolve(false);
+            }
+
+            return fetch(`/api/dashboard/notes/${currentPlatform}/${currentDate}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    key: noteKey,
+                    value: noteValue
+                })
+            })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.success) {
+                        notesCache[noteKey] = noteValue;
+                        addDebugLog(`Note saved: ${noteKey}`);
+                        return true;
+                    } else {
+                        throw new Error(data.error || 'Failed to save note');
+                    }
+                })
+                .catch(err => {
+                    console.error('Error saving note:', err);
+                    alert('Failed to save note: ' + err.message);
+                    return false;
+                });
+        }
+
+        // Get note from cache
+        function getNote(noteKey) {
+            return notesCache[noteKey] || '';
+        }
+
+        // Helper function to add debug logs
+        function addDebugLog(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            debugLogs.push(logMessage);
+            console.log(logMessage);
+
+            // Update debug log content
+            const debugContent = document.getElementById('debugLogContent');
+            if (debugContent) {
+                debugContent.textContent = debugLogs.join('\n');
+                // Auto-scroll to bottom
+                debugContent.scrollTop = debugContent.scrollHeight;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            addDebugLog('=== Dashboard Initialization ===');
+
+            // Notes will be loaded after platform and date are set
+
+            // Get platform from URL parameter if available
+            const urlParams = new URLSearchParams(window.location.search);
+            const platformParam = urlParams.get('platform');
+
+            addDebugLog(`URL parameter 'platform': ${platformParam || 'null'}`);
+
+            // If URL parameter is provided, use it (highest priority)
+            if (platformParam) {
+                addDebugLog(`Using URL parameter platform: ${platformParam}`);
+                sessionStorage.setItem('selectedPlatform', platformParam);
+                initializePlatform(platformParam);
+            } else {
+                // Always query server for current platform to ensure accuracy
+                addDebugLog('No URL parameter, querying server for current platform...');
+
+                fetch('/api/dashboard/current_platform')
+                    .then(r => r.json())
+                    .then(data => {
+                        const serverPlatform = data.platform;
+                        addDebugLog(`Server returned platform: ${serverPlatform} (has_data: ${data.has_data}, source: ${data.source})`);
+
+                        // Update sessionStorage with server's detected platform
+                        const storedPlatform = sessionStorage.getItem('selectedPlatform');
+                        if (storedPlatform !== serverPlatform) {
+                            addDebugLog(`Updating sessionStorage from '${storedPlatform}' to '${serverPlatform}'`);
+                        }
+                        sessionStorage.setItem('selectedPlatform', serverPlatform);
+
+                        initializePlatform(serverPlatform);
+                    })
+                    .catch(error => {
+                        addDebugLog(`ERROR querying server platform: ${error.message}`);
+                        // Fallback to sessionStorage if server query fails
+                        const storedPlatform = sessionStorage.getItem('selectedPlatform');
+                        if (storedPlatform) {
+                            addDebugLog(`Using sessionStorage fallback: ${storedPlatform}`);
+                            initializePlatform(storedPlatform);
+                        } else {
+                            addDebugLog('No fallback available, using default: MINIPACK3BA');
+                            initializePlatform('MINIPACK3BA');
+                        }
+                    });
+            }
+
+            // Add change event listener with logging
+            document.getElementById('platformSelect').addEventListener('change', function (e) {
+                const newPlatform = e.target.value;
+                addDebugLog(`=== Platform Changed ===`);
+                addDebugLog(`User selected platform: ${newPlatform}`);
+                addDebugLog(`Previous platform: ${currentPlatform || 'none'}`);
+                currentPlatform = newPlatform;
+
+                // Update sessionStorage for future navigation
+                sessionStorage.setItem('selectedPlatform', newPlatform);
+                addDebugLog(`sessionStorage updated to: ${newPlatform}`);
+
+                // Update display
+                const platformDisplay = document.getElementById('platformDisplay');
+                if (platformDisplay) {
+                    platformDisplay.textContent = newPlatform;
+                }
+
+                loadDates();
+            });
+
+            // Initialize layout and Sortable
+            loadLayout();
+            initSortable();
+        });
+
+        // Drag and Drop Logic
+        function initSortable() {
+            const el = document.getElementById('sortable-grid');
+            if (el) {
+                new Sortable(el, {
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function (evt) {
+                        const { oldIndex, newIndex, item } = evt;
+
+                        // Whenever an item is moved to a new position, leave a spacer behind at the source
+                        if (oldIndex !== newIndex) {
+                            const grid = document.getElementById('sortable-grid');
+
+                            // Check if there's already a spacer at or adjacent to the old position
+                            const hasAdjacentSpacer = checkAdjacentSpacers(grid, oldIndex);
+
+                            // Only insert spacer if there's no adjacent spacer
+                            if (!hasAdjacentSpacer) {
+                                const spacerId = 'spacer-' + Date.now();
+                                const spacer = createSpacerElement(spacerId);
+
+                                // Re-insert spacer at the original position to keep the gap
+                                if (oldIndex < grid.children.length) {
+                                    grid.insertBefore(spacer, grid.children[oldIndex]);
+                                } else {
+                                    grid.appendChild(spacer);
+                                }
+                                addDebugLog('Spacer inserted at position ' + oldIndex);
+                            } else {
+                                addDebugLog('Spacer already exists nearby, skipped insertion');
+                            }
+                        }
+
+                        saveLayout();
+                    }
+                });
+            }
+        }
+
+        function checkAdjacentSpacers(grid, index) {
+            // Check if the element at index or adjacent positions is a spacer
+            const children = Array.from(grid.children);
+
+            // Check current position
+            if (index < children.length) {
+                const current = children[index];
+                if (current && current.classList.contains('spacer')) {
+                    return true;
+                }
+            }
+
+            // Check previous position
+            if (index > 0) {
+                const prev = children[index - 1];
+                if (prev && prev.classList.contains('spacer')) {
+                    return true;
+                }
+            }
+
+            // Check next position
+            if (index + 1 < children.length) {
+                const next = children[index + 1];
+                if (next && next.classList.contains('spacer')) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function saveLayout() {
+            const el = document.getElementById('sortable-grid');
+            const items = el.querySelectorAll('.chart-card');
+            const layout = Array.from(items).map(item => item.getAttribute('data-id'));
+
+            // Save layout per platform and date
+            const platform = document.getElementById('platformSelect').value;
+            const date = selectedDate;
+            if (platform && date) {
+                const layoutKey = `dashboard-layout-${platform}-${date}`;
+                localStorage.setItem(layoutKey, JSON.stringify(layout));
+                addDebugLog(`Dashboard layout saved for ${platform} ${date}`);
+            }
+        }
+
+        function loadLayout() {
+            // Load layout per platform and date
+            const platform = document.getElementById('platformSelect').value;
+            const date = selectedDate;
+            if (!platform || !date) {
+                return;
+            }
+
+            const layoutKey = `dashboard-layout-${platform}-${date}`;
+            const layoutStr = localStorage.getItem(layoutKey);
+            if (layoutStr) {
+                try {
+                    const layout = JSON.parse(layoutStr);
+                    const grid = document.getElementById('sortable-grid');
+                    const items = {};
+
+                    // Map existing items
+                    grid.querySelectorAll('.chart-card').forEach(item => {
+                        const id = item.getAttribute('data-id');
+                        if (id) items[id] = item;
+                    });
+
+                    // Re-append in saved order, recreating spacers if needed
+                    layout.forEach(id => {
+                        if (items[id]) {
+                            grid.appendChild(items[id]);
+                        } else if (id.startsWith('spacer-')) {
+                            const spacer = createSpacerElement(id);
+                            grid.appendChild(spacer);
+                        }
+                    });
+                    addDebugLog(`Dashboard layout loaded for ${platform} ${date}`);
+                } catch (e) {
+                    console.error('Error loading layout:', e);
+                }
+            }
+        }
+
+        function resetLayout() {
+            const platform = document.getElementById('platformSelect').value;
+            const date = selectedDate;
+            if (!platform || !date) {
+                alert('Please select a platform and date first');
+                return;
+            }
+
+            if (confirm(`Are you sure you want to reset the layout for ${platform} ${date}?`)) {
+                const layoutKey = `dashboard-layout-${platform}-${date}`;
+                localStorage.removeItem(layoutKey);
+                addDebugLog(`Layout reset for ${platform} ${date}`);
+                location.reload();
+            }
+        }
+
+        function initializePlatform(platform) {
+            addDebugLog(`Initializing with platform: ${platform}`);
+
+            // Set the select value and display
+            const platformSelect = document.getElementById('platformSelect');
+            const platformDisplay = document.getElementById('platformDisplay');
+
+            if (platformSelect) {
+                platformSelect.value = platform;
+                addDebugLog(`Platform selector updated to: ${platform}`);
+            } else {
+                addDebugLog('ERROR: Platform selector not found!');
+            }
+
+            if (platformDisplay) {
+                platformDisplay.textContent = platform;
+                addDebugLog(`Platform display updated to: ${platform}`);
+            }
+
+            addDebugLog('Loading dates...');
+            loadDates(platform);
+        }
+
+        function loadDates(platformOverride) {
+            const platform = platformOverride || document.getElementById('platformSelect').value;
+
+            if (!platform || platform === '') {
+                addDebugLog('ERROR: No platform specified for loadDates');
+                return;
+            }
+
+            addDebugLog(`=== Loading dates for platform: ${platform} ===`);
+
+            fetch(`/api/dashboard/dates/${platform}`)
+                .then(r => r.json())
+                .then(dates => {
+                    availableDates = dates;
+                    addDebugLog(`Found ${dates.length} available dates: ${dates.join(', ') || 'none'}`);
+
+                    if (availableDates.length === 0) {
+                        addDebugLog(`No test reports found for platform: ${platform}`);
+
+                        // No data available for this platform
+                        document.getElementById('dateInput').value = 'No data available';
+                        document.getElementById('dashboardContent').style.display = 'none';
+                        selectedDate = null;
+
+                        // Clear version table
+                        const table = document.getElementById('versionTable');
+                        if (table) {
+                            table.innerHTML = `
+                                <tr><th>FBOSS_COMMIT_URL</th><td>No data</td></tr>
+                                <tr><th>FBOSS_COMMIT_DESC</th><td>No data</td></tr>
+                                <tr><th>FBOSS_BINARY</th><td>No data</td></tr>
+                                <tr><th>BCM SAI_VERSION</th><td>No data</td></tr>
+                                <tr><th>OCP SAI_VERSION</th><td>No data</td></tr>
+                                <tr><th>BCM HSDK_VERSION</th><td>No data</td></tr>
+                            `;
+                        }
+                        return;
+                    }
+
+                    // Get today's date in YYYY-MM-DD format
+                    const today = new Date();
+                    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+                    addDebugLog(`Today's date: ${todayStr}`);
+
+                    // Check if today's date has data
+                    if (availableDates.includes(todayStr)) {
+                        selectedDate = todayStr;
+                        addDebugLog(`Selected today's date: ${todayStr}`);
+                    } else if (availableDates.length > 0) {
+                        // Otherwise select the most recent date
+                        selectedDate = availableDates[0];
+                        addDebugLog(`Selected most recent date: ${selectedDate}`);
+                    }
+
+                    if (selectedDate) {
+                        document.getElementById('dateInput').value = selectedDate;
+                        addDebugLog(`Date input set to: ${selectedDate}`);
+                        renderCalendar();
+                        loadDashboard();
+                    }
+                })
+                .catch(error => {
+                    addDebugLog(`ERROR loading dates: ${error.message}`);
+                });
+        }
+
+        function toggleCalendar() {
+            const popup = document.getElementById('calendarPopup');
+            if (popup.style.display === 'none' || !popup.style.display) {
+                popup.style.display = 'block';
+                renderCalendar();
+            } else {
+                popup.style.display = 'none';
+            }
+        }
+
+        function renderCalendar() {
+            const year = currentDisplayMonth.getFullYear();
+            const month = currentDisplayMonth.getMonth();
+
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            document.getElementById('currentMonthYear').textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+
+            const daysContainer = document.getElementById('calendarDays');
+            daysContainer.innerHTML = '';
+            daysContainer.style.display = 'contents';
+
+            // Add empty cells for days before month starts
+            for (let i = 0; i < firstDay; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day empty';
+                daysContainer.appendChild(cell);
+            }
+
+            // Add days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-day';
+                cell.textContent = day;
+
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                // Check if this date has test data
+                if (availableDates.includes(dateStr)) {
+                    cell.classList.add('available');
+                    cell.onclick = () => selectDate(dateStr);
+                } else {
+                    cell.classList.add('disabled');
+                }
+
+                // Highlight today
+                if (today.getFullYear() === year &&
+                    today.getMonth() === month &&
+                    today.getDate() === day) {
+                    cell.classList.add('today');
+                }
+
+                // Highlight selected date
+                if (selectedDate === dateStr) {
+                    cell.classList.add('selected');
+                }
+
+                daysContainer.appendChild(cell);
+            }
+        }
+
+        function previousMonth() {
+            currentDisplayMonth.setMonth(currentDisplayMonth.getMonth() - 1);
+            renderCalendar();
+        }
+
+        function nextMonth() {
+            currentDisplayMonth.setMonth(currentDisplayMonth.getMonth() + 1);
+            renderCalendar();
+        }
+
+        function selectDate(dateStr) {
+            selectedDate = dateStr;
+            document.getElementById('dateInput').value = dateStr;
+            document.getElementById('calendarPopup').style.display = 'none';
+            renderCalendar();
+            loadDashboard();
+        }
+
+        // Close calendar when clicking outside
+        document.addEventListener('click', function (event) {
+            const popup = document.getElementById('calendarPopup');
+            const input = document.getElementById('dateInput');
+            const container = document.querySelector('.date-picker-container');
+
+            if (popup && input && container &&
+                !container.contains(event.target)) {
+                popup.style.display = 'none';
+            }
+        });
+
+        function loadDashboard() {
+            const platform = document.getElementById('platformSelect').value;
+            const date = selectedDate;
+            if (!date) {
+                alert('Please select a date first');
+                return;
+            }
+
+            currentPlatform = platform;
+            currentDate = date;
+
+            // Show/hide LOG DETAIL column based on platform
+            const logDetailHeader = document.getElementById('logDetailHeader');
+            if (logDetailHeader) {
+                logDetailHeader.style.display = (platform === 'MINIPACK3N') ? 'none' : '';
+            }
+
+            // Load notes after setting platform and date
+            loadNotesFromServer();
+
+            document.getElementById('debugLogContent').textContent = "Loading...";
+
+            fetch(`/api/dashboard/summary/${platform}/${date}`)
+                .then(r => {
+                    if (!r.ok) {
+                        throw new Error('Report not found');
+                    }
+                    return r.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        alert('No data available for this platform and date');
+                        document.getElementById('dashboardContent').style.display = 'none';
+                        return;
+                    }
+
+                    currentDashboardData = data; // Store data for modal
+                    document.getElementById('dashboardContent').style.display = 'block';
+                    renderVersionTable(data.version_info || {});
+                    renderCharts(data);
+
+                    // Load saved layout for this platform and date
+                    setTimeout(() => {
+                        loadLayout();
+                    }, 100);
+
+                    // Display test duration - calculate sum of individual test times
+                    const durationElement = document.getElementById('testDuration');
+
+                    // Calculate total time by summing individual test durations
+                    let totalMinutes = 0;
+                    const testDurations = [
+                        data.tests.sai.t0.duration,
+                        data.tests.sai.t1.duration,
+                        data.tests.sai.t2.duration,
+                        data.tests.agent_hw.t0.duration,
+                        data.tests.agent_hw.t1.duration,
+                        data.tests.agent_hw.t2.duration,
+                        data.tests.link.t0.duration,
+                        data.tests.link_test.default.duration,
+                        data.tests.link.ev_default.duration,
+                        data.tests.link.ev_400g.duration,
+                        data.tests.link.ev_optics_one.duration,
+                        data.tests.link.ev_optics_two.duration,
+                        data.tests.link.ev_copper.duration
+                    ];
+
+                    testDurations.forEach(duration => {
+                        if (duration) {
+                            // Parse duration string like "2h 30m" or "45m"
+                            const hoursMatch = duration.match(/(\d+)h/);
+                            const minutesMatch = duration.match(/(\d+)m/);
+                            if (hoursMatch) totalMinutes += parseInt(hoursMatch[1]) * 60;
+                            if (minutesMatch) totalMinutes += parseInt(minutesMatch[1]);
+                        }
+                    });
+
+                    if (totalMinutes > 0) {
+                        const totalHours = Math.floor(totalMinutes / 60);
+                        const remainingMinutes = totalMinutes % 60;
+                        const totalTimeStr = totalHours > 0 ? `${totalHours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
+                        durationElement.textContent = '(Total Time: ' + totalTimeStr + ')';
+                    } else {
+                        durationElement.textContent = '';
+                    }
+
+                    // Display individual test times with timestamps
+                    updateTestTimeAndDate('saiT0Time', data.tests.sai.t0.duration, data.tests.sai.t0.timestamp);
+                    updateTestTimeAndDate('saiT1Time', data.tests.sai.t1.duration, data.tests.sai.t1.timestamp);
+                    updateTestTimeAndDate('saiT2Time', data.tests.sai.t2.duration, data.tests.sai.t2.timestamp);
+                    updateTestTimeAndDate('agentT0Time', data.tests.agent_hw.t0.duration, data.tests.agent_hw.t0.timestamp);
+                    updateTestTimeAndDate('agentT1Time', data.tests.agent_hw.t1.duration, data.tests.agent_hw.t1.timestamp);
+                    updateTestTimeAndDate('agentT2Time', data.tests.agent_hw.t2.duration, data.tests.agent_hw.t2.timestamp);
+                    updateTestTimeAndDate('linkT0Time', data.tests.link.t0.duration, data.tests.link.t0.timestamp);
+
+                    // Display Link Test T0 topology
+                    updateTopology('linkT0Topology', data.tests.link.t0.topology);
+
+                    updateTestTimeAndDate('linkT1Time', data.tests.link.t1.duration, data.tests.link.t1.timestamp);
+
+                    // Display Link Test T1 topology
+                    updateTopology('linkT1Topology', data.tests.link.t1.topology);
+
+                    updateTestTimeAndDate('linkT2Time', data.tests.link.t2.duration, data.tests.link.t2.timestamp);
+
+                    // Display Link Test T2 topology
+                    updateTopology('linkT2Topology', data.tests.link.t2.topology);
+
+                    updateTestTimeAndDate('linkTestTime', data.tests.link_test.default.duration, data.tests.link_test.default.timestamp);
+                    updateTestTimeAndDate('evtDefaultTime', data.tests.link.ev_default.duration, data.tests.link.ev_default.timestamp);
+                    updateTestTimeAndDate('evt400gTime', data.tests.link.ev_400g.duration, data.tests.link.ev_400g.timestamp);
+                    updateTestTimeAndDate('evtOpticsOneTime', data.tests.link.ev_optics_one.duration, data.tests.link.ev_optics_one.timestamp);
+                    updateTestTimeAndDate('evtOpticsTwoTime', data.tests.link.ev_optics_two.duration, data.tests.link.ev_optics_two.timestamp);
+                    updateTestTimeAndDate('evtCopperTime', data.tests.link.ev_copper.duration, data.tests.link.ev_copper.timestamp);
+
+                    // Render Debug Logs
+                    if (data.debug_logs) {
+                        document.getElementById('debugLogContent').textContent = data.debug_logs.join('\n');
+                    } else {
+                        document.getElementById('debugLogContent').textContent = "No logs returned.";
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading dashboard:', error);
+                    alert('No data available for this platform and date');
+                    document.getElementById('dashboardContent').style.display = 'none';
+                    document.getElementById('debugLogContent').textContent = "Error: " + error.message;
+                });
+        }
+
+        function toggleDebug() {
+            const el = document.getElementById('debugParams');
+            const btn = document.getElementById('debugToggleBtn');
+
+            if (el.style.display === 'none') {
+                el.style.display = 'block';
+                btn.textContent = '🐛 Debug ON';
+                btn.style.background = '#28a745';
+                addDebugLog('Debug window opened by user');
+            } else {
+                el.style.display = 'none';
+                btn.textContent = '🐛 Debug OFF';
+                btn.style.background = '#6c757d';
+            }
+        }
+
+        function updateTestTime(elementId, duration) {
+            const element = document.getElementById(elementId);
+            if (element && duration) {
+                element.textContent = '(' + duration + ')';
+            } else if (element) {
+                element.textContent = '';
+            }
+        }
+
+        function updateTestTimeAndDate(elementId, duration, timestamp) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                if (timestamp && duration) {
+                    // Display both timestamp and duration
+                    element.innerHTML = `${timestamp}<br><span style="font-size: 12px; color: #5cb85c;">(${duration})</span>`;
+                } else if (timestamp) {
+                    element.textContent = timestamp;
+                } else if (duration) {
+                    element.innerHTML = `<span style="font-size: 12px; color: #5cb85c;">(${duration})</span>`;
+                } else {
+                    element.textContent = '';
+                }
+            }
+        }
+
+        function updateTopology(elementId, topology) {
+            const element = document.getElementById(elementId);
+            if (element && topology) {
+                // Define topology display names (cable length shown separately in duration)
+                const topologyMap = {
+                    'optic_one': 'Optic_one',
+                    'optic_two': 'Optic_two',
+                    'copper': 'Copper',
+                    '400g': '400G',
+                    'default': 'Default'
+                };
+
+                const displayName = topologyMap[topology] || topology;
+                element.textContent = displayName;
+                element.style.display = 'inline-block';
+            } else if (element) {
+                element.textContent = '';
+                element.style.display = 'none';
+            }
+        }
+
+        function toggleCollapsible(sectionId) {
+            const header = document.getElementById(sectionId + '-header');
+            const content = document.getElementById(sectionId + '-content');
+
+            if (header && content) {
+                header.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+            }
+        }
+
+        function renderVersionTable(info) {
+            const table = document.getElementById('versionTable');
+            const displayValue = (value) => value || 'undefined';
+
+            // Check if we have standard FBOSS info or new MP3N info
+            const hasFbossInfo = info.FBOSS_COMMIT_URL || info.FBOSS_COMMIT_DESC;
+            const hasMp3nInfo = info.PRODUCT_NAME || info.FW_VERSION;
+
+            let html = '';
+
+            if (hasMp3nInfo) {
+                // New MP3N Format with Collapsible Sections
+                html += `
+                    <tr><th colspan="2" id="hardware-header" class="collapsible-header collapsed" onclick="toggleCollapsible('hardware')" style="background: rgba(52, 73, 94, 0.8); text-align: center; border-bottom: 2px solid #5cb85c;">HARDWARE INFO</th></tr>
+                `;
+                html += `<tbody id="hardware-content" class="collapsible-content collapsed">`;
+                html += `
+                    <tr><th>Product Name</th><td>${displayValue(info.PRODUCT_NAME)}</td></tr>
+                    <tr><th>Production State</th><td>${displayValue(info.PRODUCTION_STATE)}</td></tr>
+                    <tr><th>ASIC</th><td>${displayValue(info.ASIC)}</td></tr>
+                    <tr><th>PCB Manufacturer</th><td>${displayValue(info.PCB_MANUFACTURER)}</td></tr>
+                    <tr><th>Serial Number</th><td>${displayValue(info.PRODUCT_SERIAL_NUMBER)}</td></tr>
+                `;
+                html += `</tbody>`;
+
+                html += `
+                    <tr><th colspan="2" id="firmware-header" class="collapsible-header collapsed" onclick="toggleCollapsible('firmware')" style="background: rgba(52, 73, 94, 0.8); text-align: center; border-bottom: 2px solid #5cb85c; border-top: 2px solid rgba(255,255,255,0.1);">FIRMWARE INFO</th></tr>
+                `;
+                html += `<tbody id="firmware-content" class="collapsible-content collapsed">`;
+                html += `
+                    <tr><th>Image Type</th><td>${displayValue(info.FW_IMAGE_TYPE)}</td></tr>
+                    <tr><th>FW Version</th><td>${displayValue(info.FW_VERSION)}</td></tr>
+                    <tr><th>FW Release Date</th><td>${displayValue(info.FW_RELEASE_DATE)}</td></tr>
+                    <tr><th>Product Version</th><td>${displayValue(info.PRODUCT_VERSION)}</td></tr>
+                    <tr><th>PSID</th><td>${displayValue(info.FW_PSID)}</td></tr>
+                `;
+                html += `</tbody>`;
+            }
+
+            // If both exist or only FBOSS exists, show FBOSS info (appended if both)
+            if (hasFbossInfo) {
+                if (hasMp3nInfo) {
+                    html += `<tr><th colspan="2" style="background: rgba(52, 73, 94, 0.8); text-align: center; border-bottom: 2px solid #5cb85c; border-top: 2px solid rgba(255,255,255,0.1);">FBOSS Info</th></tr>`;
+                }
+
+                const commitUrl = info.FBOSS_COMMIT_URL || '';
+                html += `
+                    <tr><th>FBOSS_COMMIT_URL</th><td>${commitUrl ? `<a href="${commitUrl}" target="_blank">${commitUrl}</a>` : 'undefined'}</td></tr>
+                    <tr><th>FBOSS_BINARY</th><td>${displayValue(info.FBOSS_BINARY)}</td></tr>
+                `;
+
+                // Only show SAI/HSDK versions if we don't have MP3N info (to avoid showing "undefined")
+                if (!hasMp3nInfo) {
+                    html += `
+                        <tr><th>BCM SAI_VERSION</th><td>${displayValue(info.BCM_SAI_VERSION)}</td></tr>
+                        <tr><th>OCP SAI_VERSION</th><td>${displayValue(info.OCP_SAI_VERSION)}</td></tr>
+                        <tr><th>BCM HSDK_VERSION</th><td>${displayValue(info.BCM_HSDK_VERSION)}</td></tr>
+                    `;
+                }
+            }
+
+            // Fallback if neither
+            if (!html) {
+                html = `
+                    <tr><th>FBOSS_COMMIT_URL</th><td>undefined</td></tr>
+                    <tr><th>FBOSS_COMMIT_DESC</th><td>undefined</td></tr>
+                    <tr><th>FBOSS_BINARY</th><td>undefined</td></tr>
+                    <tr><th>BCM SAI_VERSION</th><td>undefined</td></tr>
+                    <tr><th>OCP SAI_VERSION</th><td>undefined</td></tr>
+                    <tr><th>BCM HSDK_VERSION</th><td>undefined</td></tr>
+                `;
+            }
+
+            table.innerHTML = html;
+        }
+
+        function renderCharts(data) {
+            // Helper to handle chart visibility
+            function handleChartVisibility(chartId, data, labels) {
+                const total = data.reduce((a, b) => a + b, 0);
+                const parentCard = document.getElementById(chartId).closest('.chart-card');
+
+                if (total > 0) {
+                    parentCard.classList.remove('empty-slot');
+                    drawDonut(chartId, data, labels);
+                } else {
+                    parentCard.classList.add('empty-slot');
+                    // Draw empty chart
+                    drawEmptyDonut(chartId);
+                }
+            }
+
+            function drawEmptyDonut(id) {
+                if (charts[id]) charts[id].destroy();
+
+                const ctx = document.getElementById(id).getContext('2d');
+                charts[id] = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: ['rgba(255, 255, 255, 0.08)'],
+                            borderWidth: 2,
+                            borderColor: 'rgba(255, 255, 255, 0.15)'
+                        }]
+                    },
+                    options: {
+                        cutout: '75%',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false },
+                            datalabels: {
+                                display: true,
+                                color: 'rgba(255, 255, 255, 0.2)',
+                                font: { size: 28, weight: 'normal' },
+                                formatter: () => '-'
+                            }
+                        }
+                    },
+                    plugins: [ChartDataLabels]
+                });
+            }
+
+            // Total Test Cycle
+            handleChartVisibility('allTestChart', [data.all_tests.passed, data.all_tests.failed], ['Passed', 'Failed']);
+
+            // SAI Test T0
+            handleChartVisibility('saiTestT0Chart', [data.tests.sai.t0.passed, data.tests.sai.t0.failed], ['Passed', 'Failed']);
+
+            // SAI Test T1
+            handleChartVisibility('saiTestT1Chart', [data.tests.sai.t1.passed, data.tests.sai.t1.failed], ['Passed', 'Failed']);
+
+            // SAI Test T2
+            handleChartVisibility('saiTestT2Chart', [data.tests.sai.t2.passed, data.tests.sai.t2.failed], ['Passed', 'Failed']);
+
+            // Agent HW Test T0
+            handleChartVisibility('agentTestT0Chart', [data.tests.agent_hw.t0.passed, data.tests.agent_hw.t0.failed], ['Passed', 'Failed']);
+
+            // Agent HW Test T1
+            handleChartVisibility('agentTestT1Chart', [data.tests.agent_hw.t1.passed, data.tests.agent_hw.t1.failed], ['Passed', 'Failed']);
+
+            // Agent HW Test T2
+            handleChartVisibility('agentTestT2Chart', [data.tests.agent_hw.t2.passed, data.tests.agent_hw.t2.failed], ['Passed', 'Failed']);
+
+            // Link Test T0
+            handleChartVisibility('linkTestT0Chart', [data.tests.link.t0.passed, data.tests.link.t0.failed], ['Passed', 'Failed']);
+
+            // Link Test T1
+            handleChartVisibility('linkTestT1Chart', [data.tests.link.t1.passed, data.tests.link.t1.failed], ['Passed', 'Failed']);
+
+            // Link Test T2
+            handleChartVisibility('linkTestT2Chart', [data.tests.link.t2.passed, data.tests.link.t2.failed], ['Passed', 'Failed']);
+
+            // Link Test (from LINKTEST_LOG)
+            handleChartVisibility('linkTestChart', [data.tests.link_test.default.passed, data.tests.link_test.default.failed], ['Passed', 'Failed']);
+
+            // EVT tests by topology
+            const evtTopologies = [
+                { id: 'evtDefaultChart', data: data.tests.link.ev_default },
+                { id: 'evt400gChart', data: data.tests.link.ev_400g },
+                { id: 'evtOpticsOneChart', data: data.tests.link.ev_optics_one },
+                { id: 'evtOpticsTwoChart', data: data.tests.link.ev_optics_two },
+                { id: 'evtCopperChart', data: data.tests.link.ev_copper }
+            ];
+
+            evtTopologies.forEach(topology => {
+                handleChartVisibility(topology.id, [topology.data.passed, topology.data.failed], ['Passed', 'Failed']);
+            });
+
+            // Show/hide test rows based on data availability
+            showTestRows(data);
+        }
+
+        function showTestRows(data) {
+            // SAI Tests Row
+            const saiRow = document.getElementById('sai-tests-row');
+            const hasSaiTests = data.tests.sai.t0.total > 0 || data.tests.sai.t1.total > 0 || data.tests.sai.t2.total > 0;
+            saiRow.style.display = hasSaiTests ? 'grid' : 'none';
+
+            // Agent HW Tests Row
+            const agentRow = document.getElementById('agent-tests-row');
+            const hasAgentTests = data.tests.agent_hw.t0.total > 0 || data.tests.agent_hw.t1.total > 0 || data.tests.agent_hw.t2.total > 0;
+            agentRow.style.display = hasAgentTests ? 'grid' : 'none';
+
+            // Link Tests Row (T0, T1, T2)
+            const linkTestsRow = document.getElementById('link-tests-row');
+            const hasLinkTests = data.tests.link.t0.total > 0 || data.tests.link.t1.total > 0 || data.tests.link.t2.total > 0;
+            linkTestsRow.style.display = hasLinkTests ? 'grid' : 'none';
+
+            // Link Test Row
+            const linkTestRow = document.getElementById('link-test-row');
+            linkTestRow.style.display = data.tests.link_test.default.total > 0 ? 'grid' : 'none';
+
+            // EVT Tests Row (all EVT topologies combined)
+            const evtTestsRow = document.getElementById('evt-tests-row');
+            const hasEvtTests = data.tests.link.ev_optics_one.total > 0 ||
+                data.tests.link.ev_optics_two.total > 0 ||
+                data.tests.link.ev_copper.total > 0 ||
+                data.tests.link.ev_default.total > 0 ||
+                data.tests.link.ev_400g.total > 0;
+            evtTestsRow.style.display = hasEvtTests ? 'grid' : 'none';
+        }
+
+        function drawDonut(id, data, labels) {
+            if (charts[id]) charts[id].destroy();
+
+            const ctx = document.getElementById(id).getContext('2d');
+
+            // Calculate percentages
+            const total = data.reduce((a, b) => a + b, 0);
+            const passedPercent = total > 0 ? ((data[0] / total) * 100).toFixed(1) : 0;
+
+            charts[id] = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#5cb85c', '#d9534f'],
+                        borderWidth: 4,
+                        borderColor: 'rgba(52, 73, 94, 0.8)',
+                        hoverBackgroundColor: ['#4caf50', '#c9302c'],
+                        hoverBorderColor: '#5cb85c',
+                        hoverBorderWidth: 5
+                    }]
+                },
+                options: {
+                    cutout: '75%',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                color: '#e8ecef',
+                                padding: 15,
+                                font: {
+                                    size: 13,
+                                    weight: '600',
+                                    family: 'Segoe UI'
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'circle',
+                                boxWidth: 8,
+                                boxHeight: 8
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(52, 73, 94, 0.95)',
+                            titleColor: '#5cb85c',
+                            bodyColor: '#e8ecef',
+                            borderColor: 'rgba(92, 184, 92, 0.5)',
+                            borderWidth: 2,
+                            padding: 14,
+                            displayColors: true,
+                            titleFont: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                size: 13,
+                                weight: '600'
+                            },
+                            callbacks: {
+                                label: function (context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const percent = total > 0 ? ((value / total) * 100).toFixed(1) : 0;
+                                    return label + ': ' + value + ' (' + percent + '%)';
+                                }
+                            }
+                        }
+                    }
+                },
+                plugins: [{
+                    beforeDraw: function (chart) {
+                        const width = chart.width;
+                        const height = chart.height;
+                        const ctx = chart.ctx;
+                        ctx.restore();
+
+                        const fontSize = (height / 100).toFixed(2);
+
+                        // Draw percentage
+                        ctx.font = "bold " + (fontSize * 18) + "px Segoe UI";
+                        ctx.textBaseline = "middle";
+                        ctx.fillStyle = "#5cb85c";
+
+                        const text = passedPercent + "%";
+                        const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                        const textY = height / 2 - (fontSize * 6);
+
+                        ctx.fillText(text, textX, textY);
+
+                        // Draw total count
+                        ctx.font = "bold " + (fontSize * 9) + "px Segoe UI";
+                        ctx.fillStyle = "#e8ecef";
+                        const text2 = "Total: " + total;
+                        const text2X = Math.round((width - ctx.measureText(text2).width) / 2);
+                        const text2Y = height / 2 + (fontSize * 7);
+                        ctx.fillText(text2, text2X, text2Y);
+
+                        ctx.save();
+                    }
+                }]
+            });
+        }
+
+        function showAllTestDetails() {
+            if (!currentDashboardData) return;
+
+            // Collect all test items from all categories and tag with their source
+            let allItems = [];
+            const tests = currentDashboardData.tests;
+
+            for (const category in tests) {
+                for (const level in tests[category]) {
+                    const levelData = tests[category][level];
+                    if (levelData.items && Array.isArray(levelData.items)) {
+                        // Tag each item with its category and level
+                        const taggedItems = levelData.items.map(item => ({
+                            ...item,
+                            _category: category,
+                            _level: level
+                        }));
+                        allItems = allItems.concat(taggedItems);
+                    }
+                }
+            }
+
+            // Store current test items
+            currentTestItems = allItems;
+            currentCategory = 'all';
+            currentLevel = 'all';
+
+            // Check if all tests passed
+            const allTests = currentDashboardData.all_tests;
+            const allPassed = allTests.failed === 0 && allTests.passed > 0;
+
+            // Set default filter: if all passed, show pass; otherwise show fail
+            currentSortFilter = allPassed ? 'pass' : 'fail';
+
+            // Set modal title
+            document.getElementById('modalTitle').textContent = `All Test Results - Details (${allTests.total} total)`;
+
+            // Reset sort buttons - set appropriate filter as active
+            document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+            if (allPassed) {
+                document.getElementById('sortPass').classList.add('active');
+            } else {
+                document.getElementById('sortFail').classList.add('active');
+            }
+
+            // Show download section (CSV button only)
+            document.getElementById('downloadSection').style.display = 'flex';
+
+
+            // Render table
+            renderTestTable();
+
+            // Show modal
+            document.getElementById('testModal').style.display = 'block';
+        }
+
+        function showTestDetails(category, level) {
+            if (!currentDashboardData) return;
+
+            const testData = currentDashboardData.tests[category][level];
+            const categoryNames = {
+                'sai': 'SAI Test',
+                'agent_hw': 'Agent HW Test',
+                'link': 'Link Test'
+            };
+            const levelNames = {
+                't0': 'T0',
+                't1': 'T1',
+                't2': 'T2',
+                'ev_default': 'EVT Default',
+                'ev_400g': 'EVT 400G',
+                'ev_optics_one': 'EVT Optics One',
+                'ev_optics_two': 'EVT Optics Two',
+                'ev_copper': 'EVT Copper'
+            };
+
+            // Store current test items and category
+            currentTestItems = testData.items || [];
+            currentCategory = category;
+            currentLevel = level;
+
+            // Check if all tests passed
+            const allPassed = testData.failed === 0 && testData.passed > 0;
+
+            // Set default filter: if all passed, show pass; otherwise show fail
+            currentSortFilter = allPassed ? 'pass' : 'fail';
+
+            // Set modal title
+            document.getElementById('modalTitle').textContent =
+                `${categoryNames[category]} ${levelNames[level]} - Details`;
+
+            // Reset sort buttons - set appropriate filter as active
+            document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+            if (allPassed) {
+                document.getElementById('sortPass').classList.add('active');
+            } else {
+                document.getElementById('sortFail').classList.add('active');
+            }
+
+            // Show download section (CSV button only)
+            document.getElementById('downloadSection').style.display = 'flex';
+
+
+            // Render table
+            renderTestTable();
+
+            // Show modal
+            document.getElementById('testModal').style.display = 'block';
+        }
+
+        function renderTestTable() {
+            const tbody = document.getElementById('testDetailsBody');
+            tbody.innerHTML = '';
+
+            if (!currentTestItems || currentTestItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No test items found</td></tr>';
+                return;
+            }
+
+            // Filter items based on current sort filter
+            let filteredItems = currentTestItems;
+            if (currentSortFilter === 'pass') {
+                filteredItems = currentTestItems.filter(item => item.result === 'PASS');
+            } else if (currentSortFilter === 'fail') {
+                filteredItems = currentTestItems.filter(item => item.result === 'FAIL');
+            }
+
+            if (filteredItems.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 30px;">No items match the filter</td></tr>';
+                return;
+            }
+
+            filteredItems.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const resultClass = item.result === 'PASS' ? 'result-pass' : 'result-fail';
+                const noteKey = `note_${currentPlatform}_${currentDate}_${currentCategory}_${currentLevel}_${item.name}`;
+                const savedNote = getNote(noteKey);
+                const hasNote = savedNote.length > 0;
+                const btnClass = hasNote ? 'note-btn has-note' : 'note-btn';
+                const btnText = hasNote ? '📝 Edit' : '✏️ Add';
+                const displayNote = savedNote.length > 50 ? savedNote.substring(0, 50) + '...' : savedNote;
+                const noteDisplay = hasNote ? displayNote : '<span style="color: #7f8c8d; font-style: italic;">No note</span>';
+
+                // Get category and level from item (tagged in showAllTestDetails) or use current
+                const itemCategory = item._category || currentCategory;
+                const itemLevel = item._level || currentLevel;
+
+                // Create View button HTML based on platform
+                const viewBtnHtml = (currentPlatform !== 'MINIPACK3N') ? `
+                    <td style="text-align: center;">
+                        <button class="view-log-btn" 
+                                onclick="viewTestLogDetail('${item.name.replace(/'/g, "\\\\'").replace(/"/g, "&quot;")}', '${itemCategory}', '${itemLevel}')" 
+                                title="View detailed log report">
+                            View
+                        </button>
+                    </td>
+                ` : '<td></td>';
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td class="${resultClass}">${item.result}</td>
+                    <td style="font-size: 12px; color: #95a5a6;">${noteDisplay}</td>
+                    <td style="text-align: center;">
+                        <button class="${btnClass}" 
+                                data-note-key="${noteKey}"
+                                onclick="openNoteEditor('${noteKey}', '${item.name.replace(/'/g, "\\'")}')"
+                                title="${hasNote ? 'Click to edit note. Hover to see full note.' : 'Click to add note'}">
+                            ${btnText}
+                        </button>
+                    </td>
+                    ${viewBtnHtml}
+                `;
+                tbody.appendChild(row);
+
+                // Add hover tooltip for full note content
+                if (hasNote) {
+                    const btn = row.querySelector('.note-btn');
+                    btn.addEventListener('mouseenter', function (e) {
+                        showFullNoteTooltip(e, savedNote);
+                    });
+                    btn.addEventListener('mouseleave', function () {
+                        hideFullNoteTooltip();
+                    });
+                }
+            });
+        }
+
+        let tooltipElement = null;
+
+        function showFullNoteTooltip(event, content) {
+            // Remove existing tooltip if any
+            hideFullNoteTooltip();
+
+            // Create new tooltip
+            tooltipElement = document.createElement('div');
+            tooltipElement.className = 'note-full-tooltip';
+            tooltipElement.textContent = content;
+            tooltipElement.style.cssText = `
+                position: fixed;
+                background: rgba(0, 0, 0, 0.95);
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                font-size: 13px;
+                max-width: 400px;
+                z-index: 10001;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(76, 175, 80, 0.5);
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            `;
+
+            document.body.appendChild(tooltipElement);
+
+            // Position tooltip
+            const btnRect = event.target.getBoundingClientRect();
+            const tooltipRect = tooltipElement.getBoundingClientRect();
+
+            let left = btnRect.left;
+            let top = btnRect.top - tooltipRect.height - 10;
+
+            // Adjust if tooltip goes off screen
+            if (top < 10) {
+                top = btnRect.bottom + 10;
+            }
+            if (left + tooltipRect.width > window.innerWidth - 10) {
+                left = window.innerWidth - tooltipRect.width - 10;
+            }
+            if (left < 10) {
+                left = 10;
+            }
+
+            tooltipElement.style.left = left + 'px';
+            tooltipElement.style.top = top + 'px';
+        }
+
+        function hideFullNoteTooltip() {
+            if (tooltipElement) {
+                tooltipElement.remove();
+                tooltipElement = null;
+            }
+        }
+
+        let currentNoteKey = null;
+
+        function showNoteTooltip(event, content) {
+            // Tooltip is now handled by CSS hover on the button
+        }
+
+        function openNoteEditor(noteKey, testName) {
+            currentNoteKey = noteKey;
+            const savedNote = getNote(noteKey);
+
+            document.getElementById('noteTestName').textContent = testName;
+            document.getElementById('noteEditorTextarea').value = savedNote;
+            document.getElementById('noteEditorModal').style.display = 'block';
+
+            // Focus on textarea
+            setTimeout(() => {
+                document.getElementById('noteEditorTextarea').focus();
+            }, 100);
+        }
+
+        function closeNoteEditor() {
+            document.getElementById('noteEditorModal').style.display = 'none';
+            currentNoteKey = null;
+        }
+
+        function saveNoteFromEditor() {
+            if (!currentNoteKey) return;
+
+            const noteValue = document.getElementById('noteEditorTextarea').value;
+
+            // Save to server
+            saveNoteToServer(currentNoteKey, noteValue).then(success => {
+                if (success) {
+                    // Close modal and refresh table
+                    closeNoteEditor();
+                    renderTestTable();
+                }
+            });
+        }
+
+        function saveNote(input) {
+            const noteKey = input.getAttribute('data-note-key');
+            const noteValue = input.value;
+            localStorage.setItem(noteKey, noteValue);
+
+            // Show brief save confirmation
+            const originalBg = input.style.background;
+            input.style.background = 'rgba(76, 175, 80, 0.3)';
+            setTimeout(() => {
+                input.style.background = originalBg;
+            }, 500);
+        }
+
+        function sortTests(filter) {
+            currentSortFilter = filter;
+
+            // Update button states
+            document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('sort' + filter.charAt(0).toUpperCase() + filter.slice(1)).classList.add('active');
+
+            // Re-render table
+            renderTestTable();
+        }
+
+        function downloadTableAsCSV() {
+            if (!currentTestItems || currentTestItems.length === 0) {
+                alert('No test data available to download');
+                return;
+            }
+
+            // Filter items based on current sort filter
+            let filteredItems = currentTestItems;
+            if (currentSortFilter === 'pass') {
+                filteredItems = currentTestItems.filter(item => item.result === 'PASS');
+            } else if (currentSortFilter === 'fail') {
+                filteredItems = currentTestItems.filter(item => item.result === 'FAIL');
+            }
+
+            if (filteredItems.length === 0) {
+                alert('No items match the current filter');
+                return;
+            }
+
+            // Create CSV content
+            let csvContent = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+            csvContent += '#,Test Name,Result,Note Content\n';
+
+            filteredItems.forEach((item, index) => {
+                const name = `"${item.name.replace(/"/g, '""')}"`;  // Escape quotes
+                const noteKey = `note_${currentPlatform}_${currentDate}_${currentCategory}_${currentLevel}_${item.name}`;
+                const note = getNote(noteKey);
+                const noteEscaped = `"${note.replace(/"/g, '""')}"`;
+                csvContent += `${index + 1},${name},${item.result},${noteEscaped}\n`;
+            });
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            const fileName = `${currentCategory}_${currentLevel}_${currentSortFilter}_${currentPlatform}_${currentDate}.csv`;
+            link.setAttribute('href', url);
+            link.setAttribute('download', fileName);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function downloadTestLog() {
+            if (!currentPlatform || !currentDate || !currentCategory || !currentLevel) {
+                alert('Missing test information. Please select a test first.');
+                return;
+            }
+
+            // Build download URL
+            const downloadUrl = `/api/dashboard/download_log/${currentPlatform}/${currentDate}/${currentCategory}/${currentLevel}`;
+
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        let currentLogDetailBlob = null;
+        let currentLogDetailFilename = null;
+
+        function viewTestLogDetail(testName, itemCategory, itemLevel) {
+            // Show loading indicator
+            const loadingMsg = document.createElement('div');
+            loadingMsg.id = 'loadingIndicator';
+            loadingMsg.style.cssText = `
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                padding: 20px 40px;
+                border-radius: 12px;
+                z-index: 10000;
+                font-size: 16px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            `;
+            loadingMsg.textContent = 'Loading full log content...';
+            document.body.appendChild(loadingMsg);
+
+            const platform = currentPlatform;
+            const date = currentDate;
+            // Use passed category/level if provided, otherwise use current
+            const category = itemCategory || currentCategory;
+            const level = itemLevel || currentLevel;
+
+            // Call API to get full log content
+            fetch(`/api/dashboard/test_log_detail/${platform}/${date}/${category}/${level}/${encodeURIComponent(testName)}?full=true`)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(err => {
+                            throw new Error(err.error || 'Failed to load log');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Remove loading indicator
+                    document.body.removeChild(loadingMsg);
+
+                    // Show modal with full log (no truncation)
+                    showLogDetailModal(testName, data.status, category, level, data.log_content, data.log_size);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.body.removeChild(loadingMsg);
+                    alert('Failed to load log: ' + error.message);
+                });
+        }
+
+        function showLogDetailModal(testName, status, category, level, logContent, logSize) {
+            // Set title
+            document.getElementById('logDetailTitle').textContent = 'Test Log Detail';
+
+            // Set test information
+            document.getElementById('logDetailTestName').textContent = testName;
+
+            const statusElem = document.getElementById('logDetailStatus');
+            statusElem.textContent = status;
+            if (status === 'PASS') {
+                statusElem.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                statusElem.style.color = 'white';
+            } else if (status === 'FAIL') {
+                statusElem.style.background = 'linear-gradient(135deg, #f44336 0%, #da190b 100%)';
+                statusElem.style.color = 'white';
+            } else {
+                statusElem.style.background = 'linear-gradient(135deg, #ff9800 0%, #fb8c00 100%)';
+                statusElem.style.color = 'white';
+            }
+
+            document.getElementById('logDetailCategory').textContent = category;
+            document.getElementById('logDetailLevel').textContent = level;
+
+            // Show log size
+            const sizeKB = (logSize / 1024).toFixed(2);
+            const sizeMB = (logSize / 1024 / 1024).toFixed(2);
+            const sizeStr = logSize > 1024 * 1024 ? `${sizeMB} MB` : `${sizeKB} KB`;
+            document.getElementById('logDetailSize').textContent = sizeStr;
+
+            // Set full log content (no truncation)
+            document.getElementById('logDetailContent').textContent = logContent;
+
+            // Store test name and full content for TXT download
+            const modal = document.getElementById('logDetailModal');
+            modal.dataset.testName = testName;
+            modal.dataset.fullLogContent = logContent;
+
+            // Show modal
+            modal.style.display = 'block';
+        }
+
+        function downloadLogAsTxt() {
+            const modal = document.getElementById('logDetailModal');
+            const testName = modal.dataset.testName;
+            const logContent = modal.dataset.fullLogContent;
+
+            // Create blob and download
+            const blob = new Blob([logContent], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${testName}_log.txt`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function downloadLogDetail() {
+            const modal = document.getElementById('logDetailModal');
+            const downloadUrl = modal.dataset.downloadUrl;
+            if (!downloadUrl) return;
+
+            // Show loading
+            const btn = document.getElementById('downloadLogDetailBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span style="opacity: 0.6;">Downloading...</span>';
+            btn.disabled = true;
+
+            fetch(downloadUrl)
+                .then(response => {
+                    if (!response.ok) throw new Error('Download failed');
+                    return response.blob();
+                })
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = modal.dataset.testName + '_report.xlsx';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+
+                    // Reset button
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to download: ' + error.message);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                });
+        }
+
+        function closeLogDetailModal() {
+            document.getElementById('logDetailModal').style.display = 'none';
+        }
+
+        function closeModal() {
+            document.getElementById('testModal').style.display = 'none';
+        }
+
+        function closeTrendModal() {
+            document.getElementById('trendModal').style.display = 'none';
+        }
+
+        function closeTrendDetails() {
+            document.getElementById('trendDetailsSection').style.display = 'none';
+            document.getElementById('activeTrendPoint').value = '';
+            document.getElementById('trendDiffSection').style.display = 'none';
+            // Also hide the top button
+            document.getElementById('topCloseDetailsContainer').style.display = 'none';
+        }
+
+        // --- Trend Diff Feature ---
+
+        function closeTrendDiff() {
+            document.getElementById('trendDiffSection').style.display = 'none';
+        }
+
+        function showTrendDiff(dateStr) {
+            const diffSection = document.getElementById('trendDiffSection');
+            const loading = document.getElementById('trendDiffLoading');
+            const content = document.getElementById('trendDiffContent');
+            const newFailBody = document.getElementById('diffNewFailBody');
+            const fixedBody = document.getElementById('diffFixedBody');
+
+            diffSection.style.display = 'block';
+            loading.style.display = 'block';
+            content.style.display = 'none';
+
+            // Calculate previous day
+            // dateStr is YYYY-MM-DD
+            const currDate = new Date(dateStr);
+            const prevDate = new Date(currDate);
+            prevDate.setDate(currDate.getDate() - 1);
+
+            const prevDateStr = prevDate.toISOString().split('T')[0];
+
+            // Get current platform
+            const platform = document.getElementById('platformTitle') ?
+                document.getElementById('platformTitle').textContent.trim() :
+                (currentPlatform || 'MINIPACK3N');
+
+            console.log(`Requesting diff: ${platform} ${dateStr} vs ${prevDateStr}`);
+
+            fetch(`/api/dashboard/diff/${platform}/${dateStr}/${prevDateStr}`)
+                .then(response => response.json())
+                .then(data => {
+                    loading.style.display = 'none';
+                    content.style.display = 'block';
+
+                    // Populate New Failures
+                    const newFailContainer = document.getElementById('diffNewFailBody').closest('div').closest('div');
+                    document.getElementById('diffNewFailCount').textContent = data.stats.new_failures_count;
+                    newFailBody.innerHTML = '';
+                    if (data.new_failures.length === 0) {
+                        newFailContainer.style.display = 'none';
+                    } else {
+                        newFailContainer.style.display = 'block';
+                        data.new_failures.forEach(item => {
+                            const row = document.createElement('tr');
+                            // Highlight failures
+                            row.innerHTML = `
+                                <td style="font-weight: bold;">${item.name}</td>
+                                <td>${item.category} / ${item.level}</td>
+                                <td><span class="status-badge status-fail">FAIL</span> <span style="font-size: 0.8em; color: #888;">(Prev: ${item.prev_result})</span></td>
+                                <td>Current</td>
+                            `;
+                            newFailBody.appendChild(row);
+                        });
+                    }
+
+                    // Populate Fixed
+                    const fixedContainer = document.getElementById('diffFixedBody').closest('div').closest('div');
+                    document.getElementById('diffFixedCount').textContent = data.stats.fixed_count;
+                    fixedBody.innerHTML = '';
+                    if (data.fixed.length === 0) {
+                        fixedContainer.style.display = 'none';
+                    } else {
+                        fixedContainer.style.display = 'block';
+                        data.fixed.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="font-weight: bold;">${item.name}</td>
+                                <td>${item.category} / ${item.level}</td>
+                                <td><span class="status-badge status-pass">PASS</span> <span style="font-size: 0.8em; color: #888;">(Prev: ${item.prev_result})</span></td>
+                                <td>Current</td>
+                            `;
+                            fixedBody.appendChild(row);
+                            fixedBody.appendChild(row);
+                        });
+                    }
+
+                    // Populate Test Changes (Added/Removed)
+                    const changesContainer = document.getElementById('diffChangesBody').closest('div').closest('div');
+                    document.getElementById('diffAddedCount').textContent = data.stats.added_count || 0;
+                    document.getElementById('diffRemovedCount').textContent = data.stats.removed_count || 0;
+                    const changesBody = document.getElementById('diffChangesBody');
+                    changesBody.innerHTML = '';
+
+                    const addedTests = data.added_tests || [];
+                    const removedTests = data.removed_tests || [];
+
+                    if (addedTests.length === 0 && removedTests.length === 0) {
+                        changesContainer.style.display = 'none';
+                    } else {
+                        changesContainer.style.display = 'block';
+                        // Added Tests
+                        addedTests.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="font-weight: bold;">${item.name}</td>
+                                <td>${item.category} / ${item.level}</td>
+                                <td><span class="status-badge" style="background-color: #5bc0de;">ADDED</span></td>
+                                <td>${item.curr_result}</td>
+                            `;
+                            changesBody.appendChild(row);
+                        });
+
+                        // Removed Tests
+                        removedTests.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="font-weight: bold; color: #888;">${item.name}</td>
+                                <td style="color: #888;">${item.category} / ${item.level}</td>
+                                <td><span class="status-badge" style="background-color: #999;">REMOVED</span></td>
+                                <td style="color: #888;">${item.prev_result}</td>
+                            `;
+                            changesBody.appendChild(row);
+                        });
+                    }
+                })
+                .catch(error => {
+                    loading.style.display = 'none';
+                    alert('Error loading diff data: ' + error);
+                    console.error('Diff error:', error);
+                    diffSection.style.display = 'none';
+                });
+        }
+
+        let trendChartInstance = null;
+        let trendData = null;
+        let currentTrendType = 'all'; // 'all' or 'case'
+        let currentTrendCategory = null;
+        let currentTrendLevel = null;
+        let currentTrendRange = 'week'; // 'week', 'month', or 'year'
+        let isDownloadInProgress = false; // Global flag to prevent multiple requests
+
+        function changeTrendRange(range) {
+            currentTrendRange = range;
+
+            // Update button states
+            document.querySelectorAll('#trendModal .modal-controls .sort-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`trend${range.charAt(0).toUpperCase() + range.slice(1)}`).classList.add('active');
+
+            // Reload trend data with new range
+            loadTrendData();
+        }
+
+        function loadTrendData() {
+            const platform = document.getElementById('platformSelect').value;
+            const currentDate = document.getElementById('dateInput').value;
+            const endDate = currentDate || new Date().toISOString().split('T')[0];
+
+            // Update modal title based on range
+            const rangeLabels = {
+                'week': 'Last 7 Days',
+                'month': 'Last 30 Days',
+                'year': 'Last Year'
+            };
+
+            if (currentTrendType === 'all') {
+                document.getElementById('trendModalTitle').textContent = `All Test Results Trend (${rangeLabels[currentTrendRange]})`;
+
+                fetch(`/api/dashboard/trend/${platform}/${endDate}?range=${currentTrendRange}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        trendData = data;
+                        renderAllTestsTrendChart(data);
+                    })
+                    .catch(err => {
+                        console.error('Error loading trend data:', err);
+                        alert('Failed to load trend data');
+                    });
+            } else {
+                const testName = document.getElementById('trendModalTitle').textContent.split(' - Trend')[0];
+                document.getElementById('trendModalTitle').textContent = `${testName} - Trend (${rangeLabels[currentTrendRange]})`;
+
+                fetch(`/api/dashboard/trend/${platform}/${endDate}/${currentTrendCategory}/${currentTrendLevel}?range=${currentTrendRange}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        trendData = data;
+                        renderCaseTrendChart(data, testName);
+                    })
+                    .catch(err => {
+                        console.error('Error loading trend data:', err);
+                        alert('Failed to load trend data');
+                    });
+            }
+        }
+
+        function show7DayTrend() {
+            currentTrendType = 'all';
+            currentTrendCategory = null;
+            currentTrendLevel = null;
+            currentTrendRange = 'week'; // Default to week
+
+            // Show modal
+            document.getElementById('trendModal').style.display = 'block';
+
+            // Load trend data
+            loadTrendData('week');
+        }
+
+        // Download organized report
+        function downloadOrganizedReport() {
+            // Check if download is already in progress
+            if (isDownloadInProgress) {
+                alert('⚠️ A download is already in progress. Please wait until it completes.');
+                return;
+            }
+
+            const platform = document.getElementById('platformSelect').value;
+            const date = selectedDate;
+
+            if (!platform || !date) {
+                alert('⚠️ Please select both platform and date first');
+                return;
+            }
+
+            const btn = document.getElementById('downloadReportBtn');
+            const originalText = btn.innerHTML;
+
+            // Set download flag and disable all interactions
+            isDownloadInProgress = true;
+            btn.disabled = true;
+            btn.innerHTML = '⏳ Generating...';
+
+            // Disable the button from accepting clicks even if forced
+            btn.style.pointerEvents = 'none';
+
+            addDebugLog(`Downloading organized report for ${platform} / ${date}`);
+
+            // Create a temporary link to trigger download
+            const url = `/api/dashboard/download_organized/${platform}/${date}`;
+
+            // Use fetch to check if the request succeeds
+            fetch(url, { method: 'GET' })
+                .then(async response => {
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Failed to generate report');
+                    }
+                    // If successful, trigger the download
+                    const blob = await response.blob();
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = downloadUrl;
+                    a.download = `Organized_Report_${platform}_${date}.tar.gz`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(downloadUrl);
+                    document.body.removeChild(a);
+
+                    addDebugLog('✅ Organized report downloaded successfully');
+                    btn.innerHTML = '✅ Downloaded!';
+                    setTimeout(() => {
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        btn.style.pointerEvents = 'auto';
+                        isDownloadInProgress = false; // Release the lock
+                    }, 2000);
+                })
+                .catch(error => {
+                    addDebugLog(`ERROR: Failed to download organized report - ${error.message}`);
+                    alert(`❌ Failed to generate organized report:\n${error.message}`);
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    btn.style.pointerEvents = 'auto';
+                    isDownloadInProgress = false; // Release the lock on error
+                });
+        }
+
+        function showCaseTrend(category, level, testName) {
+            currentTrendType = 'case';
+            currentTrendCategory = category;
+            currentTrendLevel = level;
+            currentTrendRange = 'week'; // Default to week
+
+            // Set modal title
+            document.getElementById('trendModalTitle').textContent = `${testName} - Trend (Last 7 Days)`;
+
+            // Show modal
+            document.getElementById('trendModal').style.display = 'block';
+            document.getElementById('trendDetailsSection').style.display = 'none';
+
+            // Set button states
+            document.querySelectorAll('#trendModal .modal-controls .sort-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('trendWeek').classList.add('active');
+
+            // Load trend data
+            loadTrendData();
+        }
+
+        // Helper function to generate commit groups and background colors
+        function generateCommitBackgrounds(data) {
+            const annotations = {};
+            const commitGroups = [];
+            let currentCommit = null;
+            let startIndex = 0;
+
+            // Define a color palette for different commits
+            const colors = [
+                'rgba(255, 99, 132, 0.05)',   // pink
+                'rgba(54, 162, 235, 0.05)',   // blue
+                'rgba(255, 206, 86, 0.05)',   // yellow
+                'rgba(75, 192, 192, 0.05)',   // teal
+                'rgba(153, 102, 255, 0.05)',  // purple
+                'rgba(255, 159, 64, 0.05)',   // orange
+                'rgba(199, 199, 199, 0.05)',  // grey
+                'rgba(83, 102, 255, 0.05)',   // indigo
+                'rgba(255, 99, 255, 0.05)',   // magenta
+                'rgba(99, 255, 132, 0.05)'    // green
+            ];
+
+            let colorIndex = 0;
+
+            // Group consecutive data points with the same commit ID
+            for (let i = 0; i < data.length; i++) {
+                const commitId = data[i].version_info?.FBOSS_COMMIT_ID;
+
+                if (commitId && commitId !== currentCommit) {
+                    // If we have a previous group, save it
+                    if (currentCommit !== null) {
+                        commitGroups.push({
+                            commitId: currentCommit,
+                            startIndex: startIndex,
+                            endIndex: i - 1,
+                            color: colors[colorIndex % colors.length]
+                        });
+                        colorIndex++;
+                    }
+
+                    // Start new group
+                    currentCommit = commitId;
+                    startIndex = i;
+                } else if (!commitId && currentCommit !== null) {
+                    // End current group if commit ID becomes null
+                    commitGroups.push({
+                        commitId: currentCommit,
+                        startIndex: startIndex,
+                        endIndex: i - 1,
+                        color: colors[colorIndex % colors.length]
+                    });
+                    colorIndex++;
+                    currentCommit = null;
+                }
+            }
+
+            // Don't forget the last group
+            if (currentCommit !== null) {
+                commitGroups.push({
+                    commitId: currentCommit,
+                    startIndex: startIndex,
+                    endIndex: data.length - 1,
+                    color: colors[colorIndex % colors.length]
+                });
+            }
+
+            // Create annotation boxes for each commit group
+            commitGroups.forEach((group, idx) => {
+                annotations[`commit-${idx}`] = {
+                    type: 'box',
+                    xMin: group.startIndex - 0.5,
+                    xMax: group.endIndex + 0.5,
+                    backgroundColor: group.color,
+                    borderColor: group.color.replace('0.05', '0.3'),
+                    borderWidth: 1,
+                    label: {
+                        display: true,
+                        content: `Commit: ${group.commitId.substring(0, 7)}`,
+                        position: 'start',
+                        color: '#ffffff',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                        font: {
+                            size: 10
+                        },
+                        padding: 4
+                    }
+                };
+            });
+
+            return annotations;
+        }
+
+        function renderAllTestsTrendChart(data) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+
+            // Destroy previous chart if exists
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+
+            // Prepare data and adjust display based on data length
+            const dataLength = data.length;
+            let labels, pointRadius, pointHoverRadius;
+
+            if (dataLength <= 7) {
+                // Week view: show full date
+                labels = data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                pointRadius = 6;
+                pointHoverRadius = 8;
+            } else if (dataLength <= 30) {
+                // Month view: show date
+                labels = data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                pointRadius = 4;
+                pointHoverRadius = 6;
+            } else {
+                // Year view: show month/day or sample points
+                labels = data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                pointRadius = 2;
+                pointHoverRadius = 4;
+            }
+
+            const passedData = data.map(d => d.all_tests.passed);
+            const failedData = data.map(d => d.all_tests.failed);
+            const totalData = data.map(d => d.all_tests.total);
+
+            // Extract duration data (convert to minutes for display)
+            const durationData = data.map(d => {
+                // Calculate total duration from all tests
+                let totalMinutes = 0;
+                if (d.tests) {
+                    for (const category in d.tests) {
+                        for (const level in d.tests[category]) {
+                            const duration = d.tests[category][level].duration;
+                            if (duration) {
+                                // Parse duration string like "2h 30m" or "45m"
+                                const hours = duration.match(/(\d+)h/);
+                                const minutes = duration.match(/(\d+)m/);
+                                if (hours) totalMinutes += parseInt(hours[1]) * 60;
+                                if (minutes) totalMinutes += parseInt(minutes[1]);
+                            }
+                        }
+                    }
+                }
+                return totalMinutes || null;
+            });
+
+            // Generate commit background annotations
+            const commitAnnotations = generateCommitBackgrounds(data);
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Passed',
+                            data: passedData,
+                            backgroundColor: 'rgba(92, 184, 92, 0.2)',
+                            borderColor: 'rgba(92, 184, 92, 1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: pointHoverRadius,
+                            pointBackgroundColor: 'rgba(92, 184, 92, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Failed',
+                            data: failedData,
+                            backgroundColor: 'rgba(217, 83, 79, 0.2)',
+                            borderColor: 'rgba(217, 83, 79, 1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: pointHoverRadius,
+                            pointBackgroundColor: 'rgba(217, 83, 79, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Total',
+                            data: totalData,
+                            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: pointHoverRadius,
+                            pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Time',
+                            data: durationData,
+                            backgroundColor: 'rgba(255, 179, 102, 0.2)',
+                            borderColor: 'rgba(255, 179, 102, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: pointRadius - 1,
+                            pointHoverRadius: pointHoverRadius - 1,
+                            pointBackgroundColor: 'rgba(255, 179, 102, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y1',
+                            hidden: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'point',
+                        intersect: true
+                    },
+                    onClick: (event, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const datasetIndex = activeElements[0].datasetIndex;
+                            const index = activeElements[0].index;
+                            const dateData = trendData[index];
+                            const isTotalPoint = (datasetIndex === 2);
+
+                            let filterType;
+
+                            if (datasetIndex === 0) {
+                                filterType = 'pass';
+                            } else if (datasetIndex === 1) {
+                                filterType = 'fail';
+                            } else {
+                                filterType = 'all';
+                            }
+
+                            if (currentTrendType === 'all') {
+                                showAllTestsTrendDetails(dateData, filterType, isTotalPoint);
+                            } else {
+                                showCaseTrendDetails(dateData, filterType, isTotalPoint);
+                            }
+                            // Show top close button
+                            document.getElementById('topCloseDetailsContainer').style.display = 'block';
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: commitAnnotations
+                        },
+                        datalabels: {
+                            display: function (context) {
+                                // Don't show labels for Time dataset (index 3)
+                                return context.datasetIndex !== 3;
+                            },
+                            color: '#ffffff',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            },
+                            align: 'top',
+                            offset: 6,
+                            formatter: (value, context) => {
+                                return value;
+                            },
+                            backgroundColor: function (context) {
+                                const datasetIndex = context.datasetIndex;
+                                if (datasetIndex === 0) return 'rgba(92, 184, 92, 0.7)';
+                                if (datasetIndex === 1) return 'rgba(217, 83, 79, 0.7)';
+                                return 'rgba(52, 152, 219, 0.7)';
+                            },
+                            borderRadius: 4,
+                            padding: 4
+                        },
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#ffffff',
+                                font: { size: 14 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#5cb85c',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                title: (context) => {
+                                    const date = trendData[context[0].dataIndex].date;
+                                    return date;
+                                },
+                                afterBody: (context) => {
+                                    const index = context[0].dataIndex;
+                                    const day = trendData[index];
+                                    const total = day.all_tests ? day.all_tests.total : 'N/A';
+                                    const binFile = (day.version_info && day.version_info.FBOSS_BINARY) ? day.version_info.FBOSS_BINARY : 'N/A';
+                                    const commitId = (day.version_info && day.version_info.FBOSS_COMMIT_ID) ? day.version_info.FBOSS_COMMIT_ID.substring(0, 8) : 'N/A';
+                                    const duration = durationData[index];
+                                    const durationText = duration ? `${Math.floor(duration / 60)}h ${duration % 60}m` : 'N/A';
+
+                                    return `Total Tests: ${total}\nExecution Time: ${durationText}\nBin File: ${binFile}\nCommit ID: ${commitId}\n\n💡 Click on a point to see details`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Test Count',
+                                color: '#ffffff',
+                                font: { size: 13, weight: 'bold' }
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 12 }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Time (minutes)',
+                                color: '#ffb366',
+                                font: { size: 13, weight: 'bold' }
+                            },
+                            ticks: {
+                                color: '#ffb366',
+                                font: { size: 12 },
+                                callback: function (value) {
+                                    return Math.floor(value);
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 12 }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Auto-show diff for the latest data point
+            if (data.length > 0) {
+                const lastIndex = data.length - 1;
+                const latestData = data[lastIndex];
+                // Simulate clicking the "Total" point (isTotalPoint = true)
+                showAllTestsTrendDetails(latestData, 'all', true);
+
+                // Ensure focus stays on chart (scroll to top of modal content)
+                const modalBody = document.querySelector('#trendModal .modal-body');
+                if (modalBody) modalBody.scrollTop = 0;
+            }
+        }
+
+        function renderCaseTrendChart(data, testName) {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+
+            // Destroy previous chart if exists
+            if (trendChartInstance) {
+                trendChartInstance.destroy();
+            }
+
+            // Prepare data and adjust display based on data length
+            const dataLength = data.length;
+            let labels, pointRadius, pointHoverRadius;
+
+            if (dataLength <= 7) {
+                // Week view: show full date
+                labels = data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                pointRadius = 6;
+                pointHoverRadius = 8;
+            } else if (dataLength <= 30) {
+                // Month view: show date
+                labels = data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                pointRadius = 4;
+                pointHoverRadius = 6;
+            } else {
+                // Year view: show month/day
+                labels = data.map(d => {
+                    const date = new Date(d.date);
+                    return `${date.getMonth() + 1}/${date.getDate()}`;
+                });
+                pointRadius = 2;
+                pointHoverRadius = 4;
+            }
+
+            const passedData = data.map(d => d.passed || 0);
+
+            const failedData = data.map(d => d.failed || 0);
+            const totalData = data.map(d => d.total || 0);
+
+            // Extract duration data (convert to minutes)
+            const durationData = data.map(d => {
+                const duration = d.duration;
+                if (duration) {
+                    // Parse duration string like "2h 30m" or "45m"
+                    const hours = duration.match(/(\d+)h/);
+                    const minutes = duration.match(/(\d+)m/);
+                    let totalMinutes = 0;
+                    if (hours) totalMinutes += parseInt(hours[1]) * 60;
+                    if (minutes) totalMinutes += parseInt(minutes[1]);
+                    return totalMinutes || null;
+                }
+                return null;
+            });
+
+            // Generate commit background annotations
+            const commitAnnotations = generateCommitBackgrounds(data);
+
+            trendChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Passed',
+                            data: passedData,
+                            backgroundColor: 'rgba(92, 184, 92, 0.2)',
+                            borderColor: 'rgba(92, 184, 92, 1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: pointHoverRadius,
+                            pointBackgroundColor: 'rgba(92, 184, 92, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Failed',
+                            data: failedData,
+                            backgroundColor: 'rgba(217, 83, 79, 0.2)',
+                            borderColor: 'rgba(217, 83, 79, 1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: pointHoverRadius,
+                            pointBackgroundColor: 'rgba(217, 83, 79, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Total',
+                            data: totalData,
+                            backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                            borderColor: 'rgba(52, 152, 219, 1)',
+                            borderWidth: 3,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: pointHoverRadius,
+                            pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        },
+                        {
+                            label: 'Time',
+                            data: durationData,
+                            backgroundColor: 'rgba(255, 179, 102, 0.2)',
+                            borderColor: 'rgba(255, 179, 102, 1)',
+                            borderWidth: 2,
+                            fill: false,
+                            tension: 0.4,
+                            pointRadius: pointRadius - 1,
+                            pointHoverRadius: pointHoverRadius - 1,
+                            pointBackgroundColor: 'rgba(255, 179, 102, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            yAxisID: 'y1',
+                            hidden: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'point',
+                        intersect: true
+                    },
+                    onClick: (event, activeElements) => {
+                        if (activeElements.length > 0) {
+                            const datasetIndex = activeElements[0].datasetIndex;
+                            const index = activeElements[0].index;
+                            const dateData = trendData[index];
+                            let filterType;
+
+                            if (datasetIndex === 0) {
+                                filterType = 'pass';
+                            } else if (datasetIndex === 1) {
+                                filterType = 'fail';
+                            } else {
+                                filterType = 'all';
+                            }
+
+                            showCaseTrendDetails(dateData, filterType);
+                        }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: commitAnnotations
+                        },
+                        datalabels: {
+                            display: function (context) {
+                                // Don't show labels for Time dataset (index 3)
+                                return context.datasetIndex !== 3;
+                            },
+                            color: '#ffffff',
+                            font: {
+                                size: 11,
+                                weight: 'bold'
+                            },
+                            align: 'top',
+                            offset: 6,
+                            formatter: (value, context) => {
+                                return value;
+                            },
+                            backgroundColor: function (context) {
+                                const datasetIndex = context.datasetIndex;
+                                if (datasetIndex === 0) return 'rgba(92, 184, 92, 0.7)';
+                                if (datasetIndex === 1) return 'rgba(217, 83, 79, 0.7)';
+                                return 'rgba(52, 152, 219, 0.7)';
+                            },
+                            borderRadius: 4,
+                            padding: 4
+                        },
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#ffffff',
+                                font: { size: 14 },
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#5cb85c',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            callbacks: {
+                                title: (context) => {
+                                    const date = trendData[context[0].dataIndex].date;
+                                    return date;
+                                },
+                                label: (context) => {
+                                    const label = context.dataset.label || '';
+                                    const value = context.parsed.y;
+                                    const duration = trendData[context.dataIndex].duration;
+                                    return duration ? `${label}: ${value} (${duration})` : `${label}: ${value}`;
+                                },
+                                afterBody: (context) => {
+                                    const index = context[0].dataIndex;
+                                    const day = trendData[index];
+                                    const commitId = (day.version_info && day.version_info.FBOSS_COMMIT_ID) ? day.version_info.FBOSS_COMMIT_ID.substring(0, 8) : 'N/A';
+                                    return `\nCommit ID: ${commitId}\n\n💡 Click on a point to see details`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: 'Test Count',
+                                color: '#ffffff',
+                                font: { size: 13, weight: 'bold' }
+                            },
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 12 },
+                                stepSize: 1
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: 'Time (minutes)',
+                                color: '#ffb366',
+                                font: { size: 13, weight: 'bold' }
+                            },
+                            ticks: {
+                                color: '#ffb366',
+                                font: { size: 12 },
+                                callback: function (value) {
+                                    return Math.floor(value);
+                                }
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#ffffff',
+                                font: { size: 12 }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Auto-show diff for the latest data point
+            if (data.length > 0) {
+                const lastIndex = data.length - 1;
+                const latestData = data[lastIndex];
+                // Simulate clicking the "Total" point (isTotalPoint = true)
+                showCaseTrendDetails(latestData, 'all', true);
+
+                // Show top close button
+                document.getElementById('topCloseDetailsContainer').style.display = 'block';
+
+                // Ensure focus stays on chart (scroll to top of modal content)
+                const modalBody = document.querySelector('#trendModal .modal-body');
+                if (modalBody) modalBody.scrollTop = 0;
+            }
+        }
+
+        function renderTrendVersionInfo(versionInfo) {
+            const contentDiv = document.getElementById('trendVersionContent');
+            const hasFbossInfo = versionInfo.FBOSS_COMMIT_DESC || versionInfo.FBOSS_BINARY;
+            const hasMp3nInfo = versionInfo.PRODUCT_NAME || versionInfo.FW_VERSION;
+
+            let html = '<table style="width: 100%; font-size: 14px;">';
+
+            if (hasMp3nInfo) {
+                // MP3N Info
+                html += `
+                    <tr><td colspan="2" style="padding: 8px; font-weight: bold; background: rgba(92, 184, 92, 0.2);">Hardware Info</td></tr>
+                    <tr><td style="padding: 5px; width: 200px; font-weight: bold;">Product Name:</td><td style="padding: 5px;">${versionInfo.PRODUCT_NAME || 'N/A'}</td></tr>
+                    <tr><td style="padding: 5px; font-weight: bold;">ASIC:</td><td style="padding: 5px;">${versionInfo.ASIC || 'N/A'}</td></tr>
+                    <tr><td style="padding: 5px; font-weight: bold;">Serial Number:</td><td style="padding: 5px;">${versionInfo.PRODUCT_SERIAL_NUMBER || 'N/A'}</td></tr>
+                    <tr><td colspan="2" style="padding: 8px; font-weight: bold; background: rgba(92, 184, 92, 0.2);">Firmware Info</td></tr>
+                    <tr><td style="padding: 5px; font-weight: bold;">FW Version:</td><td style="padding: 5px;">${versionInfo.FW_VERSION || 'N/A'}</td></tr>
+                    <tr><td style="padding: 5px; font-weight: bold;">Product Version:</td><td style="padding: 5px;">${versionInfo.PRODUCT_VERSION || 'N/A'}</td></tr>
+                `;
+            }
+
+            if (hasFbossInfo) {
+                if (hasMp3nInfo) {
+                    html += '<tr><td colspan="2" style="padding: 8px; font-weight: bold; background: rgba(92, 184, 92, 0.2);">FBOSS Info</td></tr>';
+                }
+                html += `
+                    <tr><td style="padding: 5px; width: 200px; font-weight: bold;">FBOSS Commit:</td><td style="padding: 5px;">${versionInfo.FBOSS_COMMIT_DESC || versionInfo.FBOSS_COMMIT_ID || 'N/A'}</td></tr>
+                    <tr><td style="padding: 5px; font-weight: bold;">Binary:</td><td style="padding: 5px;">${versionInfo.FBOSS_BINARY || 'N/A'}</td></tr>
+                `;
+
+                // Only show BCM SAI Version if we don't have MP3N info
+                if (!hasMp3nInfo && versionInfo.BCM_SAI_VERSION) {
+                    html += `<tr><td style="padding: 5px; font-weight: bold;">BCM SAI Version:</td><td style="padding: 5px;">${versionInfo.BCM_SAI_VERSION}</td></tr>`;
+                }
+            }
+
+            if (!hasFbossInfo && !hasMp3nInfo) {
+                html += '<tr><td style="padding: 5px;">No version information available</td></tr>';
+            }
+
+            html += '</table>';
+            contentDiv.innerHTML = html;
+        }
+
+        function showAllTestsTrendDetails(dateData, filterType, isTotalPoint = false) {
+            currentTrendDate = dateData.date;
+
+            // Always hide first
+            const diffSection = document.getElementById('trendDiffSection');
+            diffSection.style.display = 'none';
+
+            // Auto-open diff if "Total" point
+            if (isTotalPoint) {
+                showTrendDiff(currentTrendDate);
+            }
+
+            // Show top close button
+            document.getElementById('topCloseDetailsContainer').style.display = 'block';
+
+            const detailsSection = document.getElementById('trendDetailsSection');
+            const titleElem = document.getElementById('trendDetailTitle');
+            const tbody = document.getElementById('trendDetailsBody');
+
+            // Set title
+            let count;
+            let filterText;
+            if (filterType === 'all') {
+                count = dateData.all_tests.total;
+                filterText = 'ALL';
+            } else {
+                count = filterType === 'pass' ? dateData.all_tests.passed : dateData.all_tests.failed;
+                filterText = filterType.toUpperCase();
+            }
+            titleElem.textContent = `${dateData.date} - ${filterText} Test Items (${count} items)`;
+
+            // Show version info
+            const versionInfo = dateData.version_info || {};
+            renderTrendVersionInfo(versionInfo);
+
+            // Collect all test items
+            let allItems = [];
+            const tests = dateData.tests || {};
+
+            for (const category in tests) {
+                for (const level in tests[category]) {
+                    const levelData = tests[category][level];
+                    if (levelData.items && Array.isArray(levelData.items)) {
+                        allItems = allItems.concat(levelData.items);
+                    }
+                }
+            }
+
+            // Filter by pass/fail
+
+            const filteredItems = allItems.filter(item => {
+                if (filterType === 'all') {
+                    return true;
+                } else if (filterType === 'pass') {
+                    return item.result === 'PASS';
+                } else {
+                    return item.result === 'FAIL';
+                }
+            });
+
+            // Render table
+            tbody.innerHTML = '';
+            filteredItems.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const resultClass = item.result === 'PASS' ? 'result-pass' : 'result-fail';
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td class="${resultClass}">${item.result}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Show section
+            detailsSection.style.display = 'block';
+
+            // Scroll to details
+            detailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        function showCaseTrendDetails(dateData, filterType, isTotalPoint = false) {
+            currentTrendDate = dateData.date;
+
+            // Always hide first
+            const diffSection = document.getElementById('trendDiffSection');
+            diffSection.style.display = 'none';
+
+            // Auto-open diff if "Total" point
+            if (isTotalPoint) {
+                showTrendDiff(currentTrendDate);
+            }
+
+            // Show top close button
+            document.getElementById('topCloseDetailsContainer').style.display = 'block';
+
+            const detailsSection = document.getElementById('trendDetailsSection');
+            const titleElem = document.getElementById('trendDetailTitle');
+            const tbody = document.getElementById('trendDetailsBody');
+
+            // Set title
+            let count;
+            let filterText;
+            if (filterType === 'all') {
+                count = dateData.total;
+                filterText = 'ALL';
+            } else {
+                count = filterType === 'pass' ? dateData.passed : dateData.failed;
+                filterText = filterType.toUpperCase();
+            }
+            titleElem.textContent = `${dateData.date} - ${filterText} Test Items (${count} items)`;
+
+            // Show version info
+            const versionInfo = dateData.version_info || {};
+            renderTrendVersionInfo(versionInfo);
+
+            // Get test items
+            const allItems = dateData.items || [];
+
+            // Filter by pass/fail
+
+            const filteredItems = allItems.filter(item => {
+                if (filterType === 'all') {
+                    return true;
+                } else if (filterType === 'pass') {
+                    return item.result === 'PASS';
+                } else {
+                    return item.result === 'FAIL';
+                }
+            });
+
+            // Render table
+            tbody.innerHTML = '';
+            filteredItems.forEach((item, index) => {
+                const row = document.createElement('tr');
+                const resultClass = item.result === 'PASS' ? 'result-pass' : 'result-fail';
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td class="${resultClass}">${item.result}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            // Show section
+            detailsSection.style.display = 'block';
+
+            // Scroll to details
+            detailsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        async function exportTrendToExcel() {
+            if (!trendChartInstance) {
+                alert("No chart to export!");
+                return;
+            }
+
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Trend Data');
+
+            // 1. Add Chart Image
+
+            // Temporarily switch colors for white background export
+            const originalAnimation = trendChartInstance.options.animation;
+            const originalXColor = trendChartInstance.options.scales.x.ticks.color;
+            const originalYColor = trendChartInstance.options.scales.y.ticks.color;
+            const originalLegendColor = trendChartInstance.options.plugins.legend.labels.color;
+            const originalGridColor = trendChartInstance.options.scales.x.grid.color;
+            const originalYGridColor = trendChartInstance.options.scales.y.grid.color;
+
+            trendChartInstance.options.animation = false; // Disable animation
+            trendChartInstance.options.scales.x.ticks.color = '#000000';
+            trendChartInstance.options.scales.y.ticks.color = '#000000';
+            trendChartInstance.options.plugins.legend.labels.color = '#000000';
+            trendChartInstance.options.scales.x.grid.color = 'rgba(0, 0, 0, 0.2)';
+            trendChartInstance.options.scales.y.grid.color = 'rgba(0, 0, 0, 0.2)';
+            trendChartInstance.update();
+
+            const chartImage = trendChartInstance.toBase64Image();
+            const imageId = workbook.addImage({
+                base64: chartImage,
+                extension: 'png',
+            });
+
+            // Revert colors and animation
+            trendChartInstance.options.animation = originalAnimation;
+            trendChartInstance.options.scales.x.ticks.color = originalXColor;
+            trendChartInstance.options.scales.y.ticks.color = originalYColor;
+            trendChartInstance.options.plugins.legend.labels.color = originalLegendColor;
+            trendChartInstance.options.scales.x.grid.color = originalGridColor;
+            trendChartInstance.options.scales.y.grid.color = originalYGridColor;
+            trendChartInstance.update();
+
+            worksheet.addImage(imageId, {
+                tl: { col: 1, row: 1 },
+                ext: { width: 800, height: 400 }
+            });
+
+            // 2. Add Data Table below image
+            const startRow = 22; // Leave space for image
+
+            // Define columns
+            worksheet.columns = [
+                { header: 'Date', key: 'date', width: 15 },
+                { header: 'Passed', key: 'passed', width: 10 },
+                { header: 'Failed', key: 'failed', width: 10 },
+                { header: 'Total', key: 'total', width: 10 },
+                { header: 'Status', key: 'status', width: 10 }, // Computed status
+                { header: 'Bin File', key: 'bin', width: 40 },
+                { header: 'Commit', key: 'commit', width: 40 },
+                { header: 'SAI Version', key: 'sai', width: 30 }
+            ];
+
+            // Add Header Row at specific position
+            const headerRow = worksheet.getRow(startRow);
+            headerRow.values = ['Date', 'Passed', 'Failed', 'Total', 'Status', 'Bin File', 'Commit', 'SAI Version'];
+            headerRow.font = { bold: true };
+            headerRow.commit();
+
+            // Add Data Rows
+            if (trendData && Array.isArray(trendData)) {
+                trendData.forEach((day, index) => {
+                    let passed, failed, total;
+
+                    if (currentTrendType === 'all') {
+                        passed = day.all_tests ? day.all_tests.passed : 0;
+                        failed = day.all_tests ? day.all_tests.failed : 0;
+                        total = day.all_tests ? day.all_tests.total : 0;
+                    } else {
+                        passed = day.passed || 0;
+                        failed = day.failed || 0;
+                        total = day.total || 0;
+                    }
+
+                    const versionInfo = day.version_info || {};
+                    const bin = versionInfo.FBOSS_BINARY || 'N/A';
+                    const commit = versionInfo.FBOSS_COMMIT_DESC || 'N/A';
+                    const sai = versionInfo.BCM_SAI_VERSION || 'N/A';
+
+                    // Simple status derivation
+                    let status = '';
+                    if (total > 0) {
+                        status = failed > 0 ? 'FAIL' : 'PASS';
+                    }
+
+                    const row = worksheet.getRow(startRow + 1 + index);
+                    row.values = [day.date, passed, failed, total, status, bin, commit, sai];
+
+                    // Color code status
+                    if (status === 'FAIL') {
+                        row.getCell(5).font = { color: { argb: 'FFFF0000' }, bold: true };
+                    } else if (status === 'PASS') {
+                        row.getCell(5).font = { color: { argb: 'FF008000' }, bold: true };
+                    }
+
+                    row.commit();
+                });
+            }
+
+            // 3. Export
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `trend_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function (event) {
+            const testModal = document.getElementById('testModal');
+            const trendModal = document.getElementById('trendModal');
+            if (event.target === testModal) {
+                closeModal();
+            }
+            if (event.target === trendModal) {
+                closeTrendModal();
+            }
+        }
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeModal();
+                closeTrendModal();
+            }
+        });
+
+        // Load and display version
+        function loadVersion() {
+            fetch('/VERSION')
+                .then(response => response.text())
+                .then(version => {
+                    const versionDisplay = document.getElementById('versionDisplay');
+                    if (versionDisplay) {
+                        versionDisplay.textContent = version.trim();
+                    }
+                })
+                .catch(err => {
+                    console.log('Failed to load version:', err);
+                });
+        }
+
+        // Load version on page load
+        loadVersion();
+    </script>
+</body>
+
+</html>

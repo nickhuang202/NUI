@@ -1,0 +1,67 @@
+function replaceLinksBasedOnColumnC() {
+  // ================= 設定區 =================
+  var folderId = '1k92crDkNIf6ajN11KCj-7ZBbUpYNlqSA'; 
+  var sheetName = 'Test Results'; // 請確認分頁名稱
+  // =========================================
+
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var folder = DriveApp.getFolderById(folderId);
+  
+  // 1. 建立 Drive 檔案對照表 (Map: 檔名 -> URL)
+  var files = folder.getFiles();
+  var fileMap = {}; 
+  while (files.hasNext()) {
+    var file = files.next();
+    fileMap[file.getName()] = file.getUrl();
+  }
+
+  // 2. 讀取 C 欄目前的公式
+  var lastRow = sheet.getLastRow();
+  // 假設資料從第 2 行開始，C 欄是第 3 欄
+  var range = sheet.getRange(2, 3, lastRow - 1, 1);
+  var formulas = range.getFormulas(); // 讀取公式，例如 =HYPERLINK("Logs\xxx.log", "Open Log")
+  
+  var newFormulas = [];
+
+  // 3. 逐行解析公式，提取檔名
+  for (var i = 0; i < formulas.length; i++) {
+    var originalFormula = formulas[i][0];
+    
+    // 如果這格沒有公式(空的)，就跳過
+    if (!originalFormula) {
+      newFormulas.push(['']); 
+      continue;
+    }
+
+    // [關鍵解析] 使用正規表達式抓取 .log 結尾的字串
+    // 邏輯：找雙引號中間包含 .log 的那一段
+    var match = originalFormula.match(/"([^"]+\.log)"/i);
+    
+    if (match) {
+      var fullPath = match[1]; // 抓到了 "Logs\AgentTest_0.xxx.log"
+      
+      // [關鍵處理] 去掉路徑 (處理 Windows 的 \ 或 Linux 的 /)
+      // split(/[\\/]/) 會同時切分 \ 和 /，pop() 取最後一段就是純檔名
+      var cleanFileName = fullPath.split(/[\\/]/).pop(); 
+      
+      // 去 Map 找對應的 Drive 連結
+      if (fileMap[cleanFileName]) {
+        var driveLink = fileMap[cleanFileName];
+        // 替換成新的 Drive 連結
+        newFormulas.push(['=HYPERLINK("' + driveLink + '", "Open Log")']);
+      } else {
+        // 找不到檔案，保留原本的公式，或是標記錯誤
+        // 這裡選擇保留原公式，但你可以改成 "File Not Found"
+        newFormulas.push([originalFormula]); 
+        console.log("找不到檔案: " + cleanFileName);
+      }
+    } else {
+      // 如果原本的格子不是我們要的格式，就保留原樣
+      newFormulas.push([originalFormula]);
+    }
+  }
+
+  // 4. 寫回 C 欄
+  range.setFormulas(newFormulas);
+  SpreadsheetApp.getUi().alert('連結替換完成！');
+}

@@ -1,0 +1,74 @@
+{
+  "dut_20260121124905078197": {
+    "status": "online",
+    "last_checked": "2026-02-06T14:18:30.089568",
+    "last_seen": "2026-02-06T14:18:30.089577",
+    "updated_at": "2026-02-06T14:18:30.089579",
+    "version": "v0.0.1.4",
+    "version_updated_at": "2026-02-06T12:19:12.110429",
+    "has_new_reports": false,
+    "new_reports_count": 0,
+    "reports_checked_at": "2026-02-06T11:18:09.308933",
+    "last_synced_at": "2026-02-05T11:21:22.756767"
+  },
+  "dut_20260121124749573715": {
+    "status": "online",
+    "last_checked": "2026-02-06T14:18:30.141654",
+    "last_seen": "2026-02-06T14:18:30.141663",
+    "updated_at": "2026-02-06T14:18:30.141664",
+    "has_new_reports": true,
+    "new_reports_count": 2,
+    "reports_checked_at": "2026-02-06T11:18:09.314686",
+    "last_synced_at": "2026-02-05T17:55:42.047740",
+    "version": "v0.0.1.4",
+    "version_updated_at": "2026-02-06T12:19:12.113938"
+  },
+  "dut_20260121130710641420": {
+    "status": "offline",
+    "last_checked": "2026-01-21T14:24:40.961914",
+    "last_seen": "2026-01-21T14:23:32.892788",
+    "updated_at": "2026-01-21T14:24:40.961923"
+  },
+  "dut_20260121130719208350": {
+    "status": "offline",
+    "last_checked": "2026-02-06T14:18:32.143811",
+    "last_seen": "2026-02-06T09:35:39.051024",
+    "updated_at": "2026-02-06T14:18:32.143820",
+    "version": "v0.0.1.4",
+    "version_updated_at": "2026-02-06T09:53:44.711375",
+    "has_new_reports": false,
+    "new_reports_count": 0,
+    "reports_checked_at": "2026-02-06T09:37:01.255620",
+    "last_synced_at": "2026-02-06T09:37:01.533885"
+  },
+  "dut_20260121130939507225": {
+    "status": "online",
+    "last_checked": "2026-01-21T13:52:34.342850",
+    "last_seen": "2026-01-21T13:52:34.342859",
+    "updated_at": "2026-01-21T13:52:34.342862"
+  },
+  "dut_20260121130946573759": {
+    "status": "offline",
+    "last_checked": "2026-02-06T14:18:36.149581",
+    "last_seen": "2026-01-28T18:13:16.391572",
+    "updated_at": "2026-02-06T14:18:36.149592",
+    "has_new_reports": true,
+    "new_reports_count": 11,
+    "reports_checked_at": "2026-01-26T16:24:01.228612",
+    "version": "v0.0.0.51",
+    "version_updated_at": "2026-01-28T18:02:23.655537"
+  },
+  "dut_20260129122701795222": {
+    "status": "offline",
+    "last_checked": "2026-01-29T12:29:04.296512",
+    "updated_at": "2026-01-29T12:29:04.296523"
+  },
+  "dut_20260205093412806350": {
+    "status": "offline",
+    "last_checked": "2026-02-06T14:18:34.146191",
+    "updated_at": "2026-02-06T14:18:34.146200",
+    "last_seen": "2026-02-06T09:59:10.789536",
+    "version": "v0.0.1.2",
+    "version_updated_at": "2026-02-06T09:53:44.715246"
+  }
+}

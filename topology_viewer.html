@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Topology Viewer</title>
+  <style>
+    :root {
+      --bg: #1f2a35;
+      --panel: #2a3643;
+      --panel-2: #22303d;
+      --text: #e6edf3;
+      --muted: #9aa7b2;
+      --accent: #67d38b;
+      --warn: #f7c948;
+      --border: #3b4a58;
+      --tile: #2c3a46;
+      --tile-border: #455462;
+      --tile-on: #2f4a39;
+      --tile-on-border: #55b97b;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      padding: 16px 20px;
+      background: linear-gradient(180deg, #2b3a48, #22303d);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .btn:hover { border-color: var(--accent); }
+
+    .file-input {
+      display: none;
+    }
+
+    .info {
+      margin: 12px 20px;
+      padding: 12px 16px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .info span {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .grid {
+      margin: 12px 20px 28px;
+      padding: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 10px;
+    }
+
+    .tile {
+      background: var(--tile);
+      border: 2px solid var(--tile-border);
+      border-radius: 10px;
+      padding: 8px;
+      min-height: 64px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      font-size: 12px;
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+    }
+
+    .tile.connected {
+      background: var(--tile-on);
+      border-color: var(--tile-on-border);
+      box-shadow: 0 0 0 1px rgba(85,185,123,0.4);
+    }
+
+    .tile.speed-800 { border-color: #6cc0ff; }
+    .tile.speed-400 { border-color: #9c8bff; }
+    .tile.speed-200 { border-color: #f4d35e; }
+    .tile.speed-100 { border-color: #f58f8f; }
+
+    .tile .port { font-weight: 700; }
+    .tile .speed { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+    .legend {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin: 0 20px 12px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .legend .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 4px;
+      display: inline-block;
+      margin-right: 6px;
+      border: 1px solid var(--tile-border);
+      background: var(--tile);
+    }
+
+    .legend .dot.connected {
+      background: var(--tile-on);
+      border-color: var(--tile-on-border);
+    }
+
+    .footer {
+      margin: 0 20px 24px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">Topology Viewer (Offline)</div>
+    <div class="controls">
+      <label class="btn" for="fileInput">Load JSON File</label>
+      <input id="fileInput" class="file-input" type="file" accept=".json,.tmp" />
+      <button id="clearBtn" class="btn">Clear</button>
+    </div>
+  </header>
+
+  <div class="info" id="infoPanel">
+    <div>Platform: <span id="platform">N/A</span></div>
+    <div>Ports: <span id="portCount">0</span></div>
+    <div>Connections: <span id="connCount">0</span></div>
+    <div>Source: <span id="sourceName">None</span></div>
+  </div>
+
+  <div class="legend">
+    <div><span class="dot"></span>Port</div>
+    <div><span class="dot connected"></span>Connected</div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="info" id="connectionsPanel">
+    <div>Connections:</div>
+    <div id="connectionsList" style="color: var(--text); font-weight: 600;">None</div>
+  </div>
+
+  <div class="footer">
+    Tip: Select a local file like minipack3n.materialized_JSON.tmp.
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const clearBtn = document.getElementById('clearBtn');
+    const grid = document.getElementById('grid');
+    const platformEl = document.getElementById('platform');
+    const portCountEl = document.getElementById('portCount');
+    const connCountEl = document.getElementById('connCount');
+    const sourceNameEl = document.getElementById('sourceName');
+    const connectionsListEl = document.getElementById('connectionsList');
+
+    function toSpeedLabel(speed) {
+      if (!speed) return 'N/A';
+      if (speed >= 1000000) return `${speed / 1000}G`;
+      if (speed >= 1000) {
+        if (speed % 1000 === 0) return `${speed / 1000}G`;
+        return `${speed}M`;
+      }
+      return String(speed);
+    }
+
+    function speedClass(speedLabel) {
+      if (!speedLabel) return '';
+      if (speedLabel.includes('800')) return 'speed-800';
+      if (speedLabel.includes('400')) return 'speed-400';
+      if (speedLabel.includes('200')) return 'speed-200';
+      if (speedLabel.includes('100')) return 'speed-100';
+      return '';
+    }
+
+    function getPlatformName(data) {
+      if (!data) return 'N/A';
+      if (typeof data.platform === 'string') return data.platform;
+      if (data.platform && typeof data.platform === 'object') {
+        if (typeof data.platform.name === 'string') return data.platform.name;
+        const config = data.platform?.chip?.asicConfig?.common?.config;
+        if (config && typeof config === 'object') {
+          const firstKey = Object.keys(config)[0];
+          if (firstKey) return firstKey.replace(/\.xml$/i, '');
+        }
+      }
+      if (data.sw && typeof data.sw.platform === 'string') return data.sw.platform;
+      return 'N/A';
+    }
+
+    function extractPortsAndConnections(data) {
+      const ports = [];
+      const connected = new Set();
+      const connections = [];
+      const activePorts = new Set();
+
+      if (data && Array.isArray(data.pimInfo)) {
+        const map = new Map();
+        for (const pim of data.pimInfo) {
+          const interfaces = pim.interfaces || {};
+          for (const [port, info] of Object.entries(interfaces)) {
+            map.set(port, info || {});
+          }
+        }
+        for (const [port, info] of map.entries()) {
+          ports.push({ name: port, speed: info.profileID ? `${info.profileID}` : '' });
+          if (info && info.neighbor) {
+            const a = port;
+            const b = info.neighbor;
+            const key = [a, b].sort().join('::');
+            if (!connected.has(key)) {
+              connected.add(key);
+              connections.push([a, b]);
+            }
+          }
+        }
+      } else if (data && data.sw && Array.isArray(data.sw.ports)) {
+        for (const p of data.sw.ports) {
+          const name = p.name || `port-${p.logicalID}`;
+          ports.push({ name, speed: toSpeedLabel(p.speed) });
+          if (p.state === 1) activePorts.add(name);
+        }
+      }
+
+      const connectedPorts = new Set();
+      for (const [a, b] of connections) {
+        connectedPorts.add(a);
+        connectedPorts.add(b);
+      }
+
+      // If there is no neighbor data, fall back to active ports
+      if (connections.length === 0 && activePorts.size > 0) {
+        for (const p of activePorts) connectedPorts.add(p);
+      }
+
+      return { ports, connections, connectedPorts, hasNeighborData: connections.length > 0, activeCount: activePorts.size };
+    }
+
+    function render(data, sourceName) {
+      const { ports, connections, connectedPorts, hasNeighborData, activeCount } = extractPortsAndConnections(data);
+
+      grid.innerHTML = '';
+      for (const port of ports) {
+        const tile = document.createElement('div');
+        tile.className = 'tile' + (connectedPorts.has(port.name) ? ' connected' : '');
+        const sClass = speedClass(port.speed);
+        if (sClass) tile.classList.add(sClass);
+        const portDiv = document.createElement('div');
+        portDiv.className = 'port';
+        portDiv.textContent = port.name;
+        const speedDiv = document.createElement('div');
+        speedDiv.className = 'speed';
+        speedDiv.textContent = port.speed || '';
+        tile.appendChild(portDiv);
+        tile.appendChild(speedDiv);
+        grid.appendChild(tile);
+      }
+
+      platformEl.textContent = getPlatformName(data);
+      portCountEl.textContent = String(ports.length);
+      connCountEl.textContent = String(connections.length);
+      sourceNameEl.textContent = sourceName || 'N/A';
+
+      if (connections.length === 0) {
+        connectionsListEl.textContent = hasNeighborData
+          ? 'No connections found in this file'
+          : `No neighbor data. Active ports: ${activeCount}`;
+      } else {
+        connectionsListEl.textContent = connections
+          .map(([a, b]) => `${a} ↔ ${b}`)
+          .join(' | ');
+      }
+    }
+
+    function clearView() {
+      grid.innerHTML = '';
+      platformEl.textContent = 'N/A';
+      portCountEl.textContent = '0';
+      connCountEl.textContent = '0';
+      sourceNameEl.textContent = 'None';
+      connectionsListEl.textContent = 'None';
+    }
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        render(data, file.name);
+      } catch (err) {
+        alert('Failed to parse JSON file');
+        console.error(err);
+      }
+    });
+
+    clearBtn.addEventListener('click', clearView);
+  </script>
+</body>
+</html>

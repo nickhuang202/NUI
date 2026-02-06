@@ -1,0 +1,43 @@
+NUI Project Release Information
+================================
+
+Version: v0.0.1.6
+
+0. 0.0.1.0 [2026-2-03] Refactored project structure for better modularity. 
+1. 0.0.1.1 [2026-2-04] Add profile 54 , 24 UI support 
+2. 0.0.1.2 [2026-2-05] Enhance lab_monitor feature 
+3. 0.0.1.3 [2026-2-05] Add REST API 
+4. 0.0.1.4 [2026-2-05] Add offline viewer of topology  
+5. 0.0.1.5 [2026-2-06] Enhance trand showing content 
+6. 0.0.1.6 [2026-2-07] Refactor cict test script
+
+Release Date: 2026-02-06 14:38:40
+Created By: root@localhost.localdomain
+Platform: Linux 6.11.1
+
+Package Contents:
+- Flask Web Application (app.py)
+- Configuration Converters (convert.py, reconvert.py)
+- Port Pair Checker (check_port_pairs.py)
+- HTML Frontend (NUI.html)
+- Documentation (docs/)
+- Topology Files (Topology/)
+- Link Test Configs (link_test_configs/)
+- FBOSS Source (fboss_src/)
+- Requirements (requirements.txt, requirements.lock)
+- UV project metadata (pyproject.toml)
+
+Installation (uv recommended):
+1. Extract archive: tar -xzf NUI.tar.gz
+2. Navigate to directory: cd NUI
+3. Install uv and create venv: uv venv
+4. Sync deps: uv pip sync requirements.lock
+5. Run application: uv run python app.py
+
+Alternative (pip):
+1. Install dependencies: pip install -r requirements.txt
+2. Run application: python app.py
+
+For detailed documentation, see docs/SPEC.md and docs/README.md
+
+================================

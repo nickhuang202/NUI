@@ -1,0 +1,21 @@
+{
+  "platform": "MINIPACK3BA",
+  "script": "Link_T0_test.sh",
+  "bin": "fboss_bins_bcm_xgs_20260116_13_00_45_92222be0e3_SAI_13_3_0_GA_b92a74e9_20260112_tar_gz.tar.zst",
+  "test_level": "",
+  "topology": "default",
+  "topology_file": "copper_link.json",
+  "clean_fboss": false,
+  "test_items": {
+    "sai_test": true,
+    "sai_t0": true,
+    "sai_t1": true,
+    "sai_t2": true,
+    "agent_hw_test": true,
+    "agent_t0": true,
+    "agent_t1": true,
+    "agent_t2": true,
+    "link_t0": true,
+    "evt_exit": true
+  }
+}

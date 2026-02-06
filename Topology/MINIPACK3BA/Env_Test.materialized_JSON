@@ -1,0 +1,36 @@
+{
+  "platform": "minipack3ba",
+  "pimInfo": [
+    {
+      "slot": 1,
+      "pimName": "",
+      "interfaces": {
+        "eth1/1/1": {
+          "neighbor": "eth1/2/1",
+          "profileID": 39,
+          "hasTransceiver": true
+        },
+        "eth1/2/1": {
+          "neighbor": "eth1/1/1",
+          "profileID": 39,
+          "hasTransceiver": true
+        },
+        "eth1/3/1": {
+          "neighbor": "eth1/4/1",
+          "profileID": 39,
+          "hasTransceiver": true
+        },
+        "eth1/4/1": {
+          "neighbor": "eth1/3/1",
+          "profileID": 39,
+          "hasTransceiver": true
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "saved_by": "NUI",
+    "timestamp": "2026-02-05T09:52:06.942543",
+    "connection_count": 2
+  }
+}
