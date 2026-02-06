@@ -6,6 +6,7 @@ Handles test execution, monitoring, and procedure management endpoints.
 import os
 import json
 import subprocess
+import shutil
 import re
 from flask import Blueprint, jsonify, request, current_app
 from config.logging_config import get_logger
@@ -24,6 +25,51 @@ if not os.path.exists(TEST_PROCEDURES_DIR):
 # Global test execution tracking (shared with main app)
 # This will be set by app.py to the TestExecutionManager instance
 test_execution = None
+
+
+def extract_zst_to_fboss(archive_path, dest_dir):
+    """Extract a .zst archive into /opt/fboss."""
+    if not shutil.which('tar'):
+        return False, 'tar is not available'
+    if not shutil.which('zstd'):
+        return False, 'zstd is not available'
+
+    os.makedirs(dest_dir, exist_ok=True)
+
+    result = subprocess.run(
+        ['tar', '-I', 'zstd', '-xf', archive_path, '-C', dest_dir],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode == 0:
+        return True, ''
+
+    extract_proc = subprocess.Popen(
+        ['zstd', '-d', '-c', archive_path],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    tar_proc = subprocess.Popen(
+        ['tar', '-x', '-C', dest_dir],
+        stdin=extract_proc.stdout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    if extract_proc.stdout:
+        extract_proc.stdout.close()
+
+    _, tar_err = tar_proc.communicate()
+    _, zstd_err = extract_proc.communicate()
+
+    if tar_proc.returncode == 0 and extract_proc.returncode == 0:
+        return True, ''
+
+    error_message = tar_err.decode('utf-8', errors='ignore').strip()
+    if not error_message:
+        error_message = zstd_err.decode('utf-8', errors='ignore').strip()
+    if not error_message:
+        error_message = 'Failed to extract archive'
+    return False, error_message
 
 
 def get_cached_platform():
@@ -169,6 +215,44 @@ def api_test_upload_bin():
         })
     except Exception as e:
         logger.error(f"Error uploading binary: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@test_bp.route('/extract-bin', methods=['POST'])
+def api_test_extract_bin():
+    """Extract a .zst archive from /home to /opt/fboss."""
+    data = request.get_json(silent=True) or {}
+    filename = data.get('filename')
+    clean_fboss = bool(data.get('clean_fboss', False))
+
+    if not filename:
+        return jsonify({'success': False, 'error': 'Missing filename'}), 400
+    if not is_safe_filename(filename):
+        logger.warning(f"[API] Invalid bin filename rejected: {filename}")
+        return jsonify({'success': False, 'error': 'Invalid filename'}), 400
+    if not filename.endswith('.zst'):
+        return jsonify({'success': False, 'error': 'Only .zst files are allowed'}), 400
+
+    archive_path = os.path.join('/home', filename)
+    if not os.path.exists(archive_path):
+        return jsonify({'success': False, 'error': 'File not found'}), 404
+
+    try:
+        if clean_fboss and os.path.exists('/opt/fboss'):
+            shutil.rmtree('/opt/fboss', ignore_errors=True)
+
+        ok, err = extract_zst_to_fboss(archive_path, '/opt/fboss')
+        if not ok:
+            return jsonify({'success': False, 'error': err}), 500
+
+        logger.info(f"[API] Extracted {filename} to /opt/fboss")
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'destination': '/opt/fboss'
+        })
+    except Exception as e:
+        logger.error(f"Error extracting binary: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
 

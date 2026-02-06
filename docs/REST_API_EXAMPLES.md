@@ -80,6 +80,20 @@ curl -X POST http://172.17.9.199:5000/api/test/upload-bin \
 *   `file`: The local path to the `.zst` file to upload.
 *   **Note:** Upload progress is tracked by the client. `curl` displays a progress meter by default.
 
+### Extract Bin File to /opt/fboss
+Extracts a `.zst` archive from `/home` into `/opt/fboss`.
+
+```bash
+curl -X POST http://172.17.9.199:5000/api/test/extract-bin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "fboss_bins.tar.zst",
+    "clean_fboss": true 
+  }'
+```
+*   `filename`: The `.zst` filename that already exists in `/home`.
+*   `clean_fboss`: If `true`, clears `/opt/fboss` before extracting.
+
 ---
 
 ## 3. Topology Management

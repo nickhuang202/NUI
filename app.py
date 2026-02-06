@@ -4012,6 +4012,43 @@ def api_test_upload_bin():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 
+@app.route('/api/test/extract-bin', methods=['POST'])
+def api_test_extract_bin():
+    """Extract a .zst archive from /home to /opt/fboss."""
+    from utils.validators import is_safe_filename
+
+    data = request.get_json(silent=True) or {}
+    filename = data.get('filename')
+    clean_fboss = bool(data.get('clean_fboss', False))
+
+    if not filename:
+        return jsonify({'success': False, 'error': 'Missing filename'}), 400
+    if not is_safe_filename(filename):
+        return jsonify({'success': False, 'error': 'Invalid filename'}), 400
+    if not filename.endswith('.zst'):
+        return jsonify({'success': False, 'error': 'Only .zst files are allowed'}), 400
+
+    archive_path = os.path.join('/home', filename)
+    if not os.path.exists(archive_path):
+        return jsonify({'success': False, 'error': 'File not found'}), 404
+
+    try:
+        if clean_fboss and os.path.exists('/opt/fboss'):
+            shutil.rmtree('/opt/fboss', ignore_errors=True)
+
+        ok, err = test_routes.extract_zst_to_fboss(archive_path, '/opt/fboss')
+        if not ok:
+            return jsonify({'success': False, 'error': err}), 500
+
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'destination': '/opt/fboss'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
 @app.route('/api/test/kill-processes', methods=['POST'])
 def api_test_kill_processes():
     """Kill all test-related processes and their child processes"""
