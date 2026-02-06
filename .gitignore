@@ -1,0 +1,30 @@
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+test_report/
+
+# Local caches
+.cache/
+.test_cache/
+.test_cache2/
+
+# Logs and temp files
+logs/
+*.log
+*.tmp
+*.swp
+*~
+
+# OS / IDE files
+.DS_Store
+.vscode/
+.idea/
