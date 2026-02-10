@@ -132,6 +132,187 @@ Retrieves the parsed content of a specific topology file.
 curl -X GET "http://172.17.9.199:5000/api/topology/MINIPACK3BA?file=Env_Test.materialized_JSON"
 ```
 
+### Complete Topology Creation Examples
+
+#### Example 1: Create Multi-Port Topology
+This example creates a topology with multiple port connections using different profile IDs.
+
+```bash
+#!/bin/bash
+# Multi-Port Topology API Script
+# Creates a topology with multiple port connections
+
+API_HOST="172.17.9.199:5000"
+PLATFORM="WEDGE800BACT"
+TOPOLOGY_NAME="multi_port_topology"
+
+echo "Creating topology file with multiple connections..."
+echo "Connections:"
+echo "  - eth1/1/1 (profile 39) <--> eth1/2/1 (profile 39)"
+echo "  - eth1/3/1 (profile 39) <--> eth1/4/1 (profile 39)"
+echo "  - eth1/5/1 (profile 38) <--> eth1/6/1 (profile 38)"
+
+# Step 1: Create the topology file
+SAVE_RESPONSE=$(curl -s -X POST http://${API_HOST}/api/save_topology \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "'"${PLATFORM}"'",
+    "filename": "'"${TOPOLOGY_NAME}"'",
+    "connections": [
+      {
+        "port1": "eth1/1/1",
+        "port2": "eth1/2/1",
+        "profile1": 39,
+        "profile2": 39
+      },
+      {
+        "port1": "eth1/3/1",
+        "port2": "eth1/4/1",
+        "profile1": 39,
+        "profile2": 39
+      },
+      {
+        "port1": "eth1/5/1",
+        "port2": "eth1/6/1",
+        "profile1": 38,
+        "profile2": 38
+      }
+    ]
+  }')
+
+echo "Save Response:"
+echo "$SAVE_RESPONSE" | python3 -m json.tool
+
+# Check if save was successful
+if echo "$SAVE_RESPONSE" | grep -q '"success": true'; then
+    echo "✓ Topology file created successfully!"
+    
+    # Step 2: Apply the topology
+    echo "Applying topology..."
+    
+    APPLY_RESPONSE=$(curl -s -X POST http://${API_HOST}/api/apply_topology \
+      -H "Content-Type: application/json" \
+      -d '{
+        "platform": "'"${PLATFORM}"'",
+        "config_filename": "'"${TOPOLOGY_NAME}.materialized_JSON"'"
+      }')
+    
+    echo "Apply Response:"
+    echo "$APPLY_RESPONSE" | python3 -m json.tool
+    
+    if echo "$APPLY_RESPONSE" | grep -q '"success": true'; then
+        echo "✓ Topology applied successfully!"
+    else
+        echo "✗ Failed to apply topology"
+    fi
+else
+    echo "✗ Failed to create topology file"
+fi
+```
+
+**Expected Output:**
+```json
+{
+  "success": true,
+  "file": "multi_port_topology.materialized_JSON",
+  "path": "/home/NUI/Topology/WEDGE800BACT/multi_port_topology.materialized_JSON",
+  "connections": 3
+}
+```
+
+#### Example 2: Query Topology Information
+This example demonstrates how to list and retrieve topology information.
+
+```bash
+#!/bin/bash
+# Topology Query API Script
+# Lists and retrieves topology information
+
+API_HOST="172.17.9.199:5000"
+PLATFORM="WEDGE800BACT"
+
+echo "=========================================="
+echo "Topology Query Script"
+echo "=========================================="
+
+# Step 1: List all available topology files
+echo "Step 1: Listing available topology files for ${PLATFORM}..."
+LIST_RESPONSE=$(curl -s http://${API_HOST}/api/topology_files/${PLATFORM})
+
+echo "Available Topology Files:"
+echo "$LIST_RESPONSE" | python3 -m json.tool
+
+# Step 2: Get current topology configuration
+echo ""
+echo "Step 2: Getting current topology configuration..."
+TOPOLOGY_RESPONSE=$(curl -s http://${API_HOST}/api/topology/${PLATFORM})
+
+echo "Current Topology:"
+echo "$TOPOLOGY_RESPONSE" | python3 -m json.tool
+
+# Step 3: Get specific topology file (if provided as argument)
+if [ -n "$1" ]; then
+    echo ""
+    echo "Step 3: Getting specific topology file: $1"
+    
+    SPECIFIC_RESPONSE=$(curl -s "http://${API_HOST}/api/topology/${PLATFORM}?file=$1")
+    
+    echo "Specific Topology Details:"
+    echo "$SPECIFIC_RESPONSE" | python3 -m json.tool
+fi
+
+echo ""
+echo "Usage: $0 [topology_filename]"
+echo "Example: $0 custom_topology.materialized_JSON"
+```
+
+**Example Output (List Files):**
+```json
+{
+  "platform": "WEDGE800BACT",
+  "files": [
+    "copper_jan30_wedge800bact.materialized_JSON",
+    "jc_copper_2026_0206_wedge800bact.materialized_JSON",
+    "multi_port_topology.materialized_JSON",
+    "wedge800bact.materialized_JSON"
+  ]
+}
+```
+
+**Example Output (Get Topology):**
+```json
+{
+  "platform": "WEDGE800BACT",
+  "file": "multi_port_topology.materialized_JSON",
+  "connections": [
+    {
+      "port1": "eth1/1/1",
+      "port2": "eth1/2/1",
+      "profile1": 39,
+      "profile2": 39
+    },
+    {
+      "port1": "eth1/3/1",
+      "port2": "eth1/4/1",
+      "profile1": 39,
+      "profile2": 39
+    }
+  ],
+  "profile_stats": {
+    "39": 4,
+    "38": 2
+  }
+}
+```
+
+#### Common Profile IDs
+- **Profile 23**: 100G
+- **Profile 25**: 200G
+- **Profile 38**: 400G
+- **Profile 39**: 800G
+- **Profile 48**: 50G (service ports)
+- **Profile 50**: 800G (alternative)
+
 ---
 
 ## 4. Dashboard & Reports
