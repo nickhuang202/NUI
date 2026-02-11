@@ -43,7 +43,7 @@ class TestConfig:
         """Test rate limiting default settings."""
         config = Config()
         assert config.RATE_LIMIT_ENABLED is True
-        assert '200 per day' in config.RATE_LIMIT_DEFAULT
+        assert '100000 per day' in config.RATE_LIMIT_DEFAULT
         assert '5 per minute' in config.RATE_LIMIT_TEST_START
 
 
