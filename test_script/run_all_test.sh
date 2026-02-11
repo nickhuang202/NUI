@@ -208,6 +208,17 @@ find /opt/fboss -maxdepth 1 -name "*.tar.gz" -mmin -60 -exec mv {} "$TARGET_DIR/
 
 echo "✓ Reports organized in $TARGET_DIR"
 ls -lh "$TARGET_DIR"
+
+# Copy ExitEVT Excel report into the organized folder (if it exists)
+EVT_REPORT_GLOB="/opt/fboss/${DETECTED_PLATFORM}_Testing_EVT_Exit_Link_*.xlsx"
+if ls $EVT_REPORT_GLOB >/dev/null 2>&1; then
+    cp -f $EVT_REPORT_GLOB "$TARGET_DIR/"
+    if [ $? -eq 0 ]; then
+        echo "✓ ExitEVT Excel report copied to $TARGET_DIR"
+    else
+        echo "⚠ Warning: Failed to copy ExitEVT Excel report to $TARGET_DIR"
+    fi
+fi
 # Generate dashboard cache
 echo ""
 echo "========================================================================"

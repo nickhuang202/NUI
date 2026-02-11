@@ -216,8 +216,31 @@ if [ -n "$HWTEST_CSV" ]; then
     
     # Set template and output paths
     SCRIPT_DIR=/home/NUI/test_script
-    TEMPLATE_FILE="${SCRIPT_DIR}/EVT_Testing_EVT_Exit_Link.xlsx"
-    OUTPUT_FILE="/opt/fboss/${DETECTED_PLATFORM}_Testing_EVT_Exit_Link.xlsx"
+    BASE_TEMPLATE_FILE="${SCRIPT_DIR}/EVT_Testing_EVT_Exit_Link.xlsx"
+    REPORT_BASE="/home/NUI/test_report/${DETECTED_PLATFORM}"
+    TODAY=$(date +"%Y-%m-%d")
+    LAST_TEST_DIR=$(ls -d "$REPORT_BASE"/all_test_* 2>/dev/null | awk -F_ '{print $NF " " $0}' | sort | awk -v today="$TODAY" '$1 < today {dir=$2} END{print dir}')
+    if [ -n "$LAST_TEST_DIR" ]; then
+        LAST_OUTPUT_FILE=$(ls -t "$LAST_TEST_DIR"/${DETECTED_PLATFORM}_Testing_EVT_Exit_Link_*.xlsx 2>/dev/null | head -1)
+    else
+        LAST_OUTPUT_FILE=""
+    fi
+    if [ -n "$LAST_OUTPUT_FILE" ]; then
+        TEMPLATE_FILE="$LAST_OUTPUT_FILE"
+    else
+        TEMPLATE_FILE="$BASE_TEMPLATE_FILE"
+    fi
+    COMMIT_ID=""
+    if [ -f /opt/fboss/Version_Info.txt ]; then
+        COMMIT_ID=$(grep -E 'FBOSS_COMMIT_ID|COMMIT_ID|GIT_HASH|GIT_COMMIT|COMMIT' /opt/fboss/Version_Info.txt | head -1 | sed -E 's/.*([0-9a-f]{7,40}).*/\1/')
+    fi
+    if [ -z "$COMMIT_ID" ]; then
+        COMMIT_ID=$(echo "$SHEET_NAME" | sed -E 's/.*_([0-9a-f]{7,40})$/\1/')
+    fi
+    if [ -z "$COMMIT_ID" ]; then
+        COMMIT_ID="unknown"
+    fi
+    OUTPUT_FILE="/opt/fboss/${DETECTED_PLATFORM}_Testing_EVT_Exit_Link_${DATE}_${COMMIT_ID}.xlsx"
     
     # Check if template exists, fall back to WEDGE800BACT template if not
     if [ ! -f "$TEMPLATE_FILE" ]; then

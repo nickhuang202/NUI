@@ -3210,7 +3210,9 @@
                 container.dataset.mode = targetConfig.speed;
 
                 const innerFrame = container.querySelector('.inner-frame');
-                innerFrame.className = `inner-frame profile-${targetProfile}`;
+                if (innerFrame) {
+                    innerFrame.className = `inner-frame profile-${targetProfile}`;
+                }
 
                 // Update all speed and profile labels in this container
                 const speedLabels = container.querySelectorAll('.speed-label');
@@ -3222,15 +3224,15 @@
                 // Update port visibility
                 const ports = container.querySelectorAll('.port-slot');
                 if (targetPortCount === 1) {
-                    ports[0].classList.remove('hidden');
-                    ports[1].classList.add('hidden');
-                    ports[2].classList.add('hidden');
-                    ports[3].classList.add('hidden');
+                    if (ports[0]) ports[0].classList.remove('hidden');
+                    if (ports[1]) ports[1].classList.add('hidden');
+                    if (ports[2]) ports[2].classList.add('hidden');
+                    if (ports[3]) ports[3].classList.add('hidden');
                 } else if (targetPortCount === 2) {
-                    ports[0].classList.remove('hidden');
-                    ports[1].classList.add('hidden');
-                    ports[2].classList.remove('hidden');
-                    ports[3].classList.add('hidden');
+                    if (ports[0]) ports[0].classList.remove('hidden');
+                    if (ports[1]) ports[1].classList.add('hidden');
+                    if (ports[2]) ports[2].classList.remove('hidden');
+                    if (ports[3]) ports[3].classList.add('hidden');
                 }
             });
 
@@ -3379,6 +3381,7 @@
             connectionColors = {};
             nextColorIndex = 0;
             document.querySelectorAll('.port-slot').forEach(slot => {
+                if (!slot || !slot.classList) return;
                 slot.classList.remove('selected', 'connected', 'glowing');
                 slot.style.boxShadow = '';
                 slot.style.borderColor = '';
