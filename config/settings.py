@@ -40,7 +40,7 @@ class Config:
     
     # Rate Limiting
     RATE_LIMIT_ENABLED: bool = True
-    RATE_LIMIT_DEFAULT: str = '200 per day'
+    RATE_LIMIT_DEFAULT: str = '100000 per day'
     RATE_LIMIT_TEST_START: str = '5 per minute'
     
     # CORS Settings
