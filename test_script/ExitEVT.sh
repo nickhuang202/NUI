@@ -83,7 +83,9 @@ PRBS_TEST=Prbs_ASIC_P31_TO_ASIC_P31.prbsSanity:Prbs_ASIC_P31_TO_TCVR_S_P31Q_FR4_
 
 FBOSS_TAR_ZST=$1
 TOPOLOGY_NAME=$2
+SHEET_DATE=$(date +"%Y-%m-%d")
 SHEET_NAME=$(echo "$FBOSS_TAR_ZST" | sed -E 's/.*_([0-9]{8}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[a-f0-9]{10}).*/\1/')
+SHEET_NAME="${SHEET_NAME}_${SHEET_DATE}"
 echo "$SHEET_NAME"
 
 TEST_CASES=$3
@@ -232,10 +234,10 @@ if [ -n "$HWTEST_CSV" ]; then
     fi
     COMMIT_ID=""
     if [ -f /opt/fboss/Version_Info.txt ]; then
-        COMMIT_ID=$(grep -E 'FBOSS_COMMIT_ID|COMMIT_ID|GIT_HASH|GIT_COMMIT|COMMIT' /opt/fboss/Version_Info.txt | head -1 | sed -E 's/.*([0-9a-f]{7,40}).*/\1/')
-    fi
-    if [ -z "$COMMIT_ID" ]; then
-        COMMIT_ID=$(echo "$SHEET_NAME" | sed -E 's/.*_([0-9a-f]{7,40})$/\1/')
+        COMMIT_ID=$(grep -E '^FBOSS_COMMIT_DESC' /opt/fboss/Version_Info.txt | head -1 | sed -E 's/.*\b([0-9a-f]{10})\b.*/\1/')
+        if [ -z "$COMMIT_ID" ]; then
+            COMMIT_ID=$(grep -E '^FBOSS_COMMIT_URL' /opt/fboss/Version_Info.txt | head -1 | sed -E 's/.*commit\/([0-9a-f]{40}).*/\1/' | cut -c1-10)
+        fi
     fi
     if [ -z "$COMMIT_ID" ]; then
         COMMIT_ID="unknown"
