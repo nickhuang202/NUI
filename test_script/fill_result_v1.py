@@ -248,17 +248,20 @@ try:
             ws = wb[COMMIT_ID]
         else:
             print(f"  Sheet '{COMMIT_ID}' not found - copying from template")
-            # Copy the template sheet
-            ws = wb.copy_worksheet(template_ws)
+            # Copy the first sheet in the output workbook as the template
+            ws = wb.copy_worksheet(wb.worksheets[0])
             ws.title = COMMIT_ID
     else:
         print(f"  Creating new workbook from template: {OUTPUT_FILE}")
         # Use template workbook as base
         wb = load_workbook(EVT_FILE)
-        # Rename first sheet to commit ID
-        ws = wb.active
-        ws.title = COMMIT_ID
-        print(f"  Created new sheet '{COMMIT_ID}' from template")
+        if COMMIT_ID in wb.sheetnames:
+            ws = wb[COMMIT_ID]
+            print(f"  Sheet '{COMMIT_ID}' exists - will update it")
+        else:
+            ws = wb.copy_worksheet(wb.worksheets[0])
+            ws.title = COMMIT_ID
+            print(f"  Created new sheet '{COMMIT_ID}' from template")
 
 except Exception as e:
     print(f"ERROR processing Excel file: {e}")

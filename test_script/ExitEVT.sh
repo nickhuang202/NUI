@@ -83,10 +83,9 @@ PRBS_TEST=Prbs_ASIC_P31_TO_ASIC_P31.prbsSanity:Prbs_ASIC_P31_TO_TCVR_S_P31Q_FR4_
 
 FBOSS_TAR_ZST=$1
 TOPOLOGY_NAME=$2
-SHEET_DATE=$(date +"%Y-%m-%d")
-SHEET_NAME=$(echo "$FBOSS_TAR_ZST" | sed -E 's/.*_([0-9]{8}_[0-9]{2}_[0-9]{2}_[0-9]{2}_[a-f0-9]{10}).*/\1/')
-SHEET_NAME="${SHEET_NAME}_${SHEET_DATE}"
-echo "$SHEET_NAME"
+SHEET_DATE=$(date +"%m_%d")
+SHEET_NAME=$(echo "$FBOSS_TAR_ZST" | sed -E 's/.*_([0-9]{8})_[0-9]{2}_[0-9]{2}_[0-9]{2}_([a-f0-9]{10}).*/\1_\2/')
+SHEET_NAME="${SHEET_NAME}_${SHEET_DATE}"  # Example: 20260204_2ed872e42b_02_12
 
 TEST_CASES=$3
 DATE=`date +"%Y-%m-%d-%p%I-%M"`
@@ -340,13 +339,9 @@ if [ -f "$FINAL_ARCHIVE" ]; then
         echo "  Location: /opt/fboss/$FINAL_ARCHIVE"
         echo "========================================================================"
     fi
-        echo "========================================================================"
-    fi
 else
     echo ""
     echo "========================================================================"
     echo "✗ Warning: Failed to create archive"
     echo "========================================================================"
 fi
-
-
