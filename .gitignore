@@ -28,3 +28,4 @@ logs/
 .DS_Store
 .vscode/
 .idea/
+lab_status.json
