@@ -1,7 +1,7 @@
 NUI Project Release Information
 ================================
 
-Version: v0.0.1.7
+Version: v0.0.1.8
 
 0. 0.0.1.0 [2026-2-03] Refactored project structure for better modularity. 
 1. 0.0.1.1 [2026-2-04] Add profile 54 , 24 UI support 
@@ -11,8 +11,9 @@ Version: v0.0.1.7
 5. 0.0.1.5 [2026-2-06] Enhance trand showing content 
 6. 0.0.1.6 [2026-2-07] Refactor cict test script
 7. 0.0.1.7 [2026-2-11] Enhance ExitEvt.sh
+8. 0.0.1.8 [2026-2-25] Add MCP server support8. 0.0.1.8 [2026-2-25] Create MCP client example, enhance MCP server
 
-Release Date: 2026-02-11 15:47:12
+Release Date: 2026-02-25 12:32:12
 Created By: root@localhost.localdomain
 Platform: Linux 6.11.1
 

@@ -669,3 +669,58 @@ curl -X GET http://172.17.9.199:5000/api/lab_monitor/download_log/Taichung_Lab/M
 ```
 
 
+
+## 8. MCP (Model Context Protocol) Server
+
+The NUI platform includes an MCP server implementation (`mcp_server.py`) that uses the official `mcp` Python SDK to expose read-only GET APIs as AI Agent Tools. This allows AI assistants like Claude, Cursor, or NUI's internal agents to directly query the switch state and test status.
+
+### Setup and Prerequisites
+The official `mcp` SDK requires Python 3.10+. If your system has an older Python version, it is highly recommended to use the [`uv`](https://docs.astral.sh/uv/) package manager, which will easily manage the environment and CLI execution for you:
+```bash
+# If uv is not installed: curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### Registered MCP Tools
+The `NUI_Stats` MCP Server currently exposes the following context-gathering tools:
+1. `get_system_health()`: Maps to `GET /api/v1/health`
+2. `get_test_status()`: Maps to `GET /api/test/status`
+3. `get_port_status()`: Maps to `GET /api/port_status`
+4. `get_transceiver_info()`: Maps to `GET /api/transceiver_info`
+
+### Running the MCP Server
+You can run the MCP server efficiently using `uvx` (which auto-manages the environment):
+```bash
+uvx --python 3.12 --from mcp[cli] --with fastmcp --with httpx mcp run mcp_server.py
+```
+
+### Example Usage (Client-side)
+If you want to consume this MCP server programmatically from a Python client, use the `mcp.client` library to connect to it via `stdio` or `sse`:
+
+```python
+import asyncio
+from mcp.client.stdio import stdio_client, StdioServerParameters
+from mcp.client.session import ClientSession
+import os
+
+async def main():
+    server_params = StdioServerParameters(
+        command="uvx",
+        args=["--python", "3.12", "--from", "mcp[cli]", "--with", "fastmcp", "--with", "httpx", "mcp", "run", "/home/NUI/mcp_server.py"],
+        env=dict(os.environ)
+    )
+
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            
+            # List available tools
+            tools = await session.list_tools()
+            print(f"Available tools: {[t.name for t in tools.tools]}")
+            
+            # Call the get_system_health tool
+            result = await session.call_tool("get_system_health", arguments={})
+            print(f"System Health: {result.content}")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
