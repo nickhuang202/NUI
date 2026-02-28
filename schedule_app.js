@@ -62,6 +62,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 1. Initialize Timeline Axis (00:00 to 24:00)
     const timeAxis = document.getElementById('time-axis');
+    const timelineWrapper = document.querySelector('.timeline-wrapper');
     const startHour = 0;
     const endHour = 24;
     const totalHours = endHour - startHour;
@@ -230,6 +231,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateLoadedProfileSubtitle();
     }
 
+    function scrollToFirstScheduledBlock() {
+        if (!timelineWrapper) return;
+
+        const blocks = Array.from(track.querySelectorAll('.scheduled-block'));
+        if (blocks.length === 0) return;
+
+        const firstBlock = blocks.reduce((earliest, current) => {
+            const earliestLeft = parseFloat(earliest.style.left) || 0;
+            const currentLeft = parseFloat(current.style.left) || 0;
+            return currentLeft < earliestLeft ? current : earliest;
+        });
+
+        const firstLeft = parseFloat(firstBlock.style.left) || 0;
+        const leftPadding = 120;
+        const targetScrollLeft = Math.max(0, firstLeft - leftPadding);
+
+        timelineWrapper.scrollTo({
+            left: targetScrollLeft,
+            behavior: 'smooth'
+        });
+    }
+
     async function loadSavedProfilesList() {
         if (!loadProfileSelect) return;
         try {
@@ -344,6 +367,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (deleteBtn) deleteBtn.style.display = 'inline-block';
 
                     applyExecutionStatusToBlocks();
+                    requestAnimationFrame(scrollToFirstScheduledBlock);
                 }
             } catch (err) {
                 console.error("Failed to fetch profile details", err);

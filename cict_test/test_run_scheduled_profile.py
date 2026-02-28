@@ -176,6 +176,18 @@ class TestRunScheduledProfileDryRun(unittest.TestCase):
         self.assertEqual(payload['pid'], 12345)
         self.assertIn('updated_at', payload)
 
+    def test_load_profile_supports_slash_in_profile_name_via_sanitized_filename(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            profile_file = os.path.join(tmpdir, 'Profile 2282026.json')
+            with open(profile_file, 'w', encoding='utf-8') as f:
+                self.scheduler.json.dump({'profile_name': 'Profile 2/28/2026', 'tests': []}, f)
+
+            with patch.object(self.scheduler, 'SCHEDULES_DIR', tmpdir):
+                data = self.scheduler.load_profile('Profile 2/28/2026')
+
+        self.assertIsNotNone(data)
+        self.assertEqual(data['profile_name'], 'Profile 2/28/2026')
+
 
 if __name__ == '__main__':
     unittest.main()

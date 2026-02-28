@@ -1,0 +1,15 @@
+{
+  "profile_name": "Profile 2/28/2026",
+  "cron_rule": {
+    "type": "single",
+    "preview": "Single Run (Today Only)"
+  },
+  "tests": [
+    {
+      "title": "Nick_SAI_Test",
+      "type": "event",
+      "startOffsetMinutes": 900,
+      "durationMinutes": 60
+    }
+  ]
+}

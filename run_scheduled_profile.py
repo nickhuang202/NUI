@@ -25,6 +25,14 @@ TEST_SCRIPT_DIR = '/home/NUI/test_script'
 EXECUTION_STATUS_FILE = '/home/NUI/.schedule_execution_status.json'
 
 
+def get_safe_profile_filepath(profile_name):
+    """Sanitize profile name to match schedule API file naming and prevent path traversal."""
+    safe_name = "".join([c for c in str(profile_name) if c.isalpha() or c.isdigit() or c in (' ', '-', '_')]).rstrip()
+    if not safe_name:
+        return None
+    return os.path.join(SCHEDULES_DIR, f"{safe_name}.json")
+
+
 def write_execution_status(status_data):
     """Persist schedule execution status for UI polling."""
     payload = {
@@ -190,7 +198,11 @@ def run_test_item(test_item, profile_name, dry_run=False):
         return False
 
 def load_profile(profile_name):
-    filepath = os.path.join(SCHEDULES_DIR, f"{profile_name}.json")
+    filepath = get_safe_profile_filepath(profile_name)
+    if not filepath:
+        logger.error(f"Invalid profile name: {profile_name}")
+        return None
+
     if not os.path.exists(filepath):
         logger.error(f"Profile file not found: {filepath}")
         return None

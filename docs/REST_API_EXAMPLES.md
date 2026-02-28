@@ -491,6 +491,40 @@ curl -X POST http://172.17.9.199:5000/api/test/procedures \
   curl -X GET http://172.17.9.199:5000/api/schedule/profiles/SAI_T0_TEST
   ```
 
+  #### Adjust Existing Profile to Daily 05:00 (Reference)
+  This is the same operation done via MCP client: update an existing profile to run every day at **05:00**.
+
+  **Step 1: Read existing profile**
+  ```bash
+  curl -X GET "http://172.17.9.199:5000/api/schedule/profiles/Profile%202/28/2026"
+  ```
+
+  **Step 2: Save profile with custom cron `0 5 * * *`**
+  ```bash
+  curl -X POST http://172.17.9.199:5000/api/schedule/profiles \
+    -H "Content-Type: application/json" \
+    -d '{
+      "profile_name": "Profile 2/28/2026",
+      "cron_rule": {
+        "type": "custom",
+        "preview": "Cron: 0 5 * * *"
+      },
+      "tests": [
+        {
+          "title": "Nick_SAI_Test",
+          "type": "event",
+          "startOffsetMinutes": 870,
+          "durationMinutes": 60
+        }
+      ]
+    }'
+  ```
+
+  **Step 3: Verify updated profile**
+  ```bash
+  curl -X GET "http://172.17.9.199:5000/api/schedule/profiles/Profile%202/28/2026"
+  ```
+
   #### Delete Schedule Profile
 
   ```bash
@@ -754,7 +788,7 @@ curl -X GET http://172.17.9.199:5000/api/lab_monitor/download_log/Taichung_Lab/M
 
 ## 8. MCP (Model Context Protocol) Server
 
-The NUI platform includes an MCP server implementation (`mcp_server.py`) that uses the official `mcp` Python SDK to expose read-only GET APIs as AI Agent Tools. This allows AI assistants like Claude, Cursor, or NUI's internal agents to directly query the switch state and test status.
+The NUI platform includes an MCP server implementation (`mcp_server.py`) that uses the official `mcp` Python SDK to expose API operations as AI Agent Tools. This allows AI assistants like Claude, Cursor, or NUI's internal agents to query state and update schedule profiles.
 
 ### Setup and Prerequisites
 The official `mcp` SDK requires Python 3.10+. If your system has an older Python version, it is highly recommended to use the [`uv`](https://docs.astral.sh/uv/) package manager, which will easily manage the environment and CLI execution for you:
@@ -768,6 +802,9 @@ The `NUI_Stats` MCP Server currently exposes the following context-gathering too
 2. `get_test_status()`: Maps to `GET /api/test/status`
 3. `get_port_status()`: Maps to `GET /api/port_status`
 4. `get_transceiver_info()`: Maps to `GET /api/transceiver_info`
+5. `get_schedule_profiles()`: Maps to `GET /api/schedule/profiles`
+6. `get_schedule_profile(profile_name)`: Maps to `GET /api/schedule/profiles/{profile_name}`
+7. `set_schedule_profile_daily_time(profile_name, hour, minute)`: Reads profile then saves with custom cron via `POST /api/schedule/profiles`
 
 ### Running the MCP Server
 You can run the MCP server efficiently using `uvx` (which auto-manages the environment):
