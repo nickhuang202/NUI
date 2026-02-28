@@ -910,6 +910,14 @@
             background: #7f8c8d;
         }
 
+        .table-btn.schedule-enabled {
+            background: #5cb85c;
+        }
+
+        .table-btn.schedule-enabled:hover {
+            background: #4cae4c;
+        }
+
         .table-new-report {
             display: inline-flex;
             align-items: center;
@@ -1100,6 +1108,34 @@
             </div>
         </div>
     </div>
+
+    <!-- DUT Schedule Modal -->
+    <div id="scheduleModal" class="modal">
+        <div class="modal-content" style="max-width: 520px;">
+            <div class="modal-header" id="scheduleModalTitle">DUT Schedule Settings</div>
+            <div class="form-group">
+                <label>DUT</label>
+                <input type="text" id="scheduleModalDutName" readonly>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="scheduleEnabledCheckbox" style="width: 16px; height: 16px;">
+                    Enable Schedule for this DUT
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="scheduleProfileSelect">Schedule Profile</label>
+                <select id="scheduleProfileSelect">
+                    <option value="">-- Select Schedule Profile --</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeScheduleModal()">Cancel</button>
+                <button class="btn-primary" onclick="saveDutSchedule()">Save</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notification -->
     <div id="notification" class="notification"></div>
 
@@ -1930,10 +1966,12 @@
         // Global state
         let config = { labs: [] };
         let statuses = {};
+        let dutSchedules = {};
         let currentLabId = null;
         let currentPlatformId = null;
         let currentDutId = null;
         let editMode = false;
+        let currentScheduleDutId = null;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function () {
@@ -1958,6 +1996,7 @@
                 const data = await response.json();
                 config = data;
                 await loadStatuses();
+                await loadDutSchedules();
                 renderLabs();
                 showDetailTable();
             } catch (error) {
@@ -1981,6 +2020,18 @@
                 statuses = newStatuses;
             } catch (error) {
                 console.error('Error loading statuses:', error);
+            }
+        }
+
+        async function loadDutSchedules() {
+            try {
+                const response = await fetch('/api/lab_monitor/schedule/all');
+                const result = await response.json();
+                if (result.success) {
+                    dutSchedules = result.schedules || {};
+                }
+            } catch (error) {
+                console.error('Error loading DUT schedules:', error);
             }
         }
 
@@ -3233,7 +3284,13 @@
                         <button class="table-btn" onclick="showReportModal('${dut.id}'); event.stopPropagation();">Report</button>
                     </td>
                     <td>
-                        <button class="table-btn secondary" onclick="event.stopPropagation();">Schedule</button>
+                        <button
+                            class="table-btn ${dutSchedules[dut.id]?.enabled ? 'schedule-enabled' : 'secondary'}"
+                            onclick="openSchedulePage('${dut.id}'); event.stopPropagation();"
+                            title="${dutSchedules[dut.id]?.enabled ? ('Profile: ' + (dutSchedules[dut.id]?.profile_name || '')) : 'Set DUT schedule'}"
+                        >
+                            ${dutSchedules[dut.id]?.enabled ? 'Scheduled' : 'Schedule'}
+                        </button>
                     </td>
                 `;
                 tbody.appendChild(row);
@@ -3245,6 +3302,147 @@
                 tbody.appendChild(row);
             }
 
+        }
+
+        function findDutById(dutId) {
+            for (const lab of config.labs || []) {
+                for (const platform of lab.platforms || []) {
+                    for (const dut of platform.duts || []) {
+                        if (dut.id === dutId) {
+                            return { dut, platform, lab };
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        async function loadScheduleProfiles(selectedProfile = '') {
+            const profileSelect = document.getElementById('scheduleProfileSelect');
+            if (!profileSelect) return;
+
+            profileSelect.innerHTML = '<option value="">-- Select Schedule Profile --</option>';
+
+            try {
+                const response = await fetch('/api/schedule/profiles');
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.profiles)) {
+                    data.profiles.forEach(profile => {
+                        const option = document.createElement('option');
+                        option.value = profile.name;
+                        option.textContent = profile.name;
+                        profileSelect.appendChild(option);
+                    });
+                }
+
+                if (selectedProfile) {
+                    profileSelect.value = selectedProfile;
+                }
+            } catch (error) {
+                console.error('Error loading schedule profiles:', error);
+            }
+        }
+
+        async function showScheduleModal(dutId) {
+            currentScheduleDutId = dutId;
+            const modal = document.getElementById('scheduleModal');
+            const enabledCheckbox = document.getElementById('scheduleEnabledCheckbox');
+            const dutNameInput = document.getElementById('scheduleModalDutName');
+
+            const dutInfo = findDutById(dutId);
+            if (!dutInfo) {
+                showNotification('DUT not found', true);
+                return;
+            }
+
+            dutNameInput.value = `${dutInfo.lab.name} / ${dutInfo.platform.name} / ${dutInfo.dut.name}`;
+
+            try {
+                const response = await fetch(`/api/lab_monitor/dut/${dutId}/schedule`);
+                const data = await response.json();
+
+                const scheduleData = data.success ? data.schedule : (dutSchedules[dutId] || {});
+                const enabled = Boolean(scheduleData.enabled);
+                const profileName = scheduleData.profile_name || '';
+
+                enabledCheckbox.checked = enabled;
+                await loadScheduleProfiles(profileName);
+            } catch (error) {
+                console.error('Error loading DUT schedule:', error);
+                enabledCheckbox.checked = false;
+                await loadScheduleProfiles('');
+            }
+
+            modal.style.display = 'block';
+        }
+
+        async function openSchedulePage(dutId) {
+            try {
+                const response = await fetch(`/api/lab_monitor/dut/${encodeURIComponent(dutId)}/schedule`);
+                const data = await response.json();
+
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to fetch DUT schedule profile');
+                }
+
+                const profileName = (data.schedule?.profile_name || '').trim();
+                const params = new URLSearchParams();
+                params.set('from', 'monitor');
+                params.set('dut_id', dutId);
+
+                if (profileName) {
+                    params.set('profile', profileName);
+                }
+
+                window.open(`/lab_monitor/schedule?${params.toString()}`, '_blank');
+            } catch (error) {
+                console.error('Error opening DUT schedule page:', error);
+                showNotification(error.message || 'Failed to open schedule page', true);
+            }
+        }
+
+        function closeScheduleModal() {
+            document.getElementById('scheduleModal').style.display = 'none';
+            currentScheduleDutId = null;
+        }
+
+        async function saveDutSchedule() {
+            if (!currentScheduleDutId) return;
+
+            const enabled = document.getElementById('scheduleEnabledCheckbox').checked;
+            const profileName = document.getElementById('scheduleProfileSelect').value;
+
+            if (enabled && !profileName) {
+                showNotification('Please select a schedule profile', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/lab_monitor/dut/${currentScheduleDutId}/schedule`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        enabled,
+                        profile_name: profileName
+                    })
+                });
+
+                const data = await response.json();
+                if (!data.success) {
+                    throw new Error(data.error || 'Failed to save DUT schedule');
+                }
+
+                dutSchedules[currentScheduleDutId] = data.schedule || { enabled: false, profile_name: '' };
+                closeScheduleModal();
+                showNotification('DUT schedule saved successfully');
+                showDetailTable(currentLabId, currentPlatformId);
+            } catch (error) {
+                console.error('Error saving DUT schedule:', error);
+                showNotification(error.message || 'Failed to save DUT schedule', true);
+            }
         }
 
         // =====================================================================

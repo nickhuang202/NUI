@@ -60,7 +60,7 @@ register_error_handlers(app)
 
 # Register blueprints with API versioning
 # Each blueprint is registered twice: once for /api/v1/... and once for /api/...
-from routes import dashboard_bp, test_bp, topology_bp, lab_monitor_bp, port_bp, health_bp
+from routes import dashboard_bp, test_bp, topology_bp, lab_monitor_bp, port_bp, health_bp, schedule_bp
 
 # Helper to register blueprint for both v1 and legacy paths
 def register_versioned_blueprint(blueprint, original_prefix):
@@ -80,10 +80,11 @@ register_versioned_blueprint(test_bp, '/api/test')
 register_versioned_blueprint(topology_bp, '/api')  # topology routes are at /api/topology_*
 register_versioned_blueprint(lab_monitor_bp, '/api/lab_monitor')
 register_versioned_blueprint(port_bp, '/api')  # port routes are at /api/port_*, /api/absent_*, etc.
+register_versioned_blueprint(schedule_bp, '/api/schedule')
 # Health blueprint already has v1 and legacy routes defined
 app.register_blueprint(health_bp)
 
-logger.info("All blueprints registered with API versioning (v1 + legacy): Dashboard, Test, Topology, Lab Monitor, Port, Health")
+logger.info("All blueprints registered with API versioning (v1 + legacy): Dashboard, Test, Topology, Lab Monitor, Port, Health, Schedule")
 
 # Test report base directory (now from config)
 TEST_REPORT_BASE = config.TEST_REPORT_BASE
@@ -671,6 +672,34 @@ def dashboard_page():
     if not os.path.isfile('templates/dashboard.html'):
         return "<h3>dashboard.html not found.</h3>"
     response = app.make_response(render_template('dashboard.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
+@app.route('/schedule')
+def schedule_page():
+    """Serve the Daily Scheduling Configuration UI."""
+    if not os.path.exists('templates'):
+        os.makedirs('templates', exist_ok=True)
+    if not os.path.isfile('templates/schedule.html'):
+        return "<h3>schedule.html not found.</h3>"
+    response = app.make_response(render_template('schedule.html'))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
+
+@app.route('/lab_monitor/schedule')
+def lab_monitor_schedule_page():
+    """Serve Lab Monitor's dedicated Scheduling UI (same style as DUT schedule page)."""
+    if not os.path.exists('templates'):
+        os.makedirs('templates', exist_ok=True)
+    if not os.path.isfile('templates/schedule.html'):
+        return "<h3>schedule.html not found.</h3>"
+    response = app.make_response(render_template('schedule.html'))
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'

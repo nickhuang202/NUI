@@ -14,7 +14,7 @@ from pathlib import Path
 import platform
 
 # Version number (update this for each release)
-VERSION = "v0.0.1.8"
+VERSION = "v0.0.1.9"
 PROJECT_NAME = "NUI"
 
 # Files and directories to exclude
@@ -116,6 +116,7 @@ Version: {VERSION}
 6. 0.0.1.6 [2026-2-07] Refactor cict test script
 7. 0.0.1.7 [2026-2-11] Enhance ExitEvt.sh
 8. 0.0.1.8 [2026-2-25] Create MCP client example, enhance MCP server
+9. 0.0.1.9 [2026-2-28] Add scheduling test page 
 
 Release Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 Created By: {os.getenv('USER', os.getenv('USERNAME', 'unknown'))}@{platform.node()}

@@ -11,6 +11,7 @@ import time
 import requests
 from datetime import datetime
 from typing import Dict, List, Optional
+from urllib.parse import quote
 
 LAB_CONFIG_FILE = 'lab_config.json'
 LAB_STATUS_FILE = 'lab_status.json'
@@ -495,6 +496,208 @@ def copy_dut(source_platform_id: str, target_platform_id: str, dut_id: str) -> D
                     return {"success": False, "error": "Failed to save configuration"}
     
     return {"success": False, "error": "Target platform not found"}
+
+
+def _normalize_dut_schedule(schedule_data: Optional[Dict]) -> Dict:
+    """Normalize DUT schedule payload shape for API responses."""
+    schedule_data = schedule_data or {}
+    profile_name = schedule_data.get('profile_name', '')
+
+    return {
+        'enabled': bool(schedule_data.get('enabled', False)),
+        'profile_name': str(profile_name) if profile_name is not None else '',
+        'updated_at': schedule_data.get('updated_at')
+    }
+
+
+def get_dut_schedule(dut_id: str) -> Dict:
+    """Get schedule settings for a DUT."""
+    config = load_lab_config()
+
+    for lab in config.get('labs', []):
+        for platform in lab.get('platforms', []):
+            for dut in platform.get('duts', []):
+                if dut.get('id') == dut_id:
+                    return {
+                        'success': True,
+                        'dut_id': dut_id,
+                        'schedule': _normalize_dut_schedule(dut.get('schedule'))
+                    }
+
+    return {'success': False, 'error': 'DUT not found'}
+
+
+def set_dut_schedule(dut_id: str, enabled: bool, profile_name: str = '') -> Dict:
+    """Set schedule settings for a DUT."""
+    config = load_lab_config()
+    normalized_profile = str(profile_name).strip() if profile_name is not None else ''
+
+    for lab in config.get('labs', []):
+        for platform in lab.get('platforms', []):
+            for dut in platform.get('duts', []):
+                if dut.get('id') == dut_id:
+                    dut['schedule'] = {
+                        'enabled': bool(enabled),
+                        'profile_name': normalized_profile if enabled else '',
+                        'updated_at': datetime.now().isoformat()
+                    }
+                    dut['updated_at'] = datetime.now().isoformat()
+                    platform['updated_at'] = datetime.now().isoformat()
+                    lab['updated_at'] = datetime.now().isoformat()
+
+                    if save_lab_config(config):
+                        return {
+                            'success': True,
+                            'dut_id': dut_id,
+                            'schedule': _normalize_dut_schedule(dut.get('schedule'))
+                        }
+                    return {'success': False, 'error': 'Failed to save configuration'}
+
+    return {'success': False, 'error': 'DUT not found'}
+
+
+def get_all_dut_schedules() -> Dict:
+    """Get schedule settings for all DUTs."""
+    config = load_lab_config()
+    schedules = {}
+
+    for lab in config.get('labs', []):
+        for platform in lab.get('platforms', []):
+            for dut in platform.get('duts', []):
+                dut_id = dut.get('id')
+                if not dut_id:
+                    continue
+                schedules[dut_id] = _normalize_dut_schedule(dut.get('schedule'))
+
+    return {'success': True, 'schedules': schedules}
+
+
+def _find_dut_by_id(dut_id: str) -> Optional[Dict]:
+    """Find DUT object by ID from lab config."""
+    config = load_lab_config()
+
+    for lab in config.get('labs', []):
+        for platform in lab.get('platforms', []):
+            for dut in platform.get('duts', []):
+                if dut.get('id') == dut_id:
+                    return dut
+    return None
+
+
+def _curl_remote_schedule_api(dut_id: str, method: str, api_path: str, payload: Optional[Dict] = None, timeout: int = 15) -> Dict:
+    """Call DUT schedule API via curl command and return parsed JSON response."""
+    dut = _find_dut_by_id(dut_id)
+    if not dut:
+        return {'success': False, 'error': 'DUT not found', 'status_code': 404}
+
+    ip_address = str(dut.get('ip_address') or '').strip()
+    if not ip_address:
+        return {'success': False, 'error': 'DUT ip_address is empty', 'status_code': 400}
+
+    api_path = api_path if api_path.startswith('/') else f'/{api_path}'
+    url = f'http://{ip_address}:5000{api_path}'
+
+    cmd = [
+        'curl',
+        '-sS',
+        '-m', str(timeout),
+        '-X', method.upper(),
+        '-H', 'Accept: application/json',
+        '-w', '\n__HTTP_STATUS__:%{http_code}',
+        url
+    ]
+
+    if payload is not None:
+        cmd.extend([
+            '-H', 'Content-Type: application/json',
+            '--data', json.dumps(payload, ensure_ascii=False)
+        ])
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 2)
+    except subprocess.TimeoutExpired:
+        return {'success': False, 'error': f'curl timeout when calling DUT {ip_address}', 'status_code': 504}
+    except Exception as e:
+        return {'success': False, 'error': f'Failed to execute curl: {e}', 'status_code': 500}
+
+    if result.returncode != 0:
+        error_msg = result.stderr.strip() or result.stdout.strip() or 'curl command failed'
+        return {'success': False, 'error': error_msg, 'status_code': 502}
+
+    stdout = result.stdout or ''
+    marker = '__HTTP_STATUS__:'
+    if marker not in stdout:
+        return {'success': False, 'error': 'Invalid curl response format', 'status_code': 502}
+
+    body_text, status_text = stdout.rsplit(marker, 1)
+    body_text = body_text.strip()
+    status_text = status_text.strip()
+
+    try:
+        http_status = int(status_text)
+    except ValueError:
+        http_status = 502
+
+    parsed_body = {}
+    if body_text:
+        try:
+            parsed_body = json.loads(body_text)
+        except Exception:
+            return {
+                'success': False,
+                'error': 'DUT response is not valid JSON',
+                'status_code': 502,
+                'raw_response': body_text[:500]
+            }
+
+    if http_status >= 400:
+        if isinstance(parsed_body, dict):
+            parsed_body.setdefault('success', False)
+            parsed_body.setdefault('status_code', http_status)
+            return parsed_body
+        return {
+            'success': False,
+            'error': f'DUT API returned HTTP {http_status}',
+            'status_code': http_status
+        }
+
+    if isinstance(parsed_body, dict):
+        parsed_body.setdefault('status_code', http_status)
+        return parsed_body
+
+    return {'success': True, 'status_code': http_status, 'data': parsed_body}
+
+
+def remote_list_schedule_profiles(dut_id: str) -> Dict:
+    """List schedule profiles from remote DUT via curl."""
+    return _curl_remote_schedule_api(dut_id, 'GET', '/api/schedule/profiles')
+
+
+def remote_get_schedule_profile(dut_id: str, profile_name: str) -> Dict:
+    """Get a schedule profile from remote DUT via curl."""
+    encoded_profile = quote(str(profile_name), safe='')
+    return _curl_remote_schedule_api(dut_id, 'GET', f'/api/schedule/profiles/{encoded_profile}')
+
+
+def remote_save_schedule_profile(dut_id: str, payload: Dict) -> Dict:
+    """Save schedule profile to remote DUT via curl."""
+    return _curl_remote_schedule_api(dut_id, 'POST', '/api/schedule/profiles', payload=payload)
+
+
+def remote_delete_schedule_profile(dut_id: str, profile_name: str) -> Dict:
+    """Delete schedule profile from remote DUT via curl."""
+    encoded_profile = quote(str(profile_name), safe='')
+    return _curl_remote_schedule_api(dut_id, 'DELETE', f'/api/schedule/profiles/{encoded_profile}')
+
+
+def remote_get_schedule_execution_status(dut_id: str) -> Dict:
+    """Get remote DUT schedule execution status via curl."""
+    return _curl_remote_schedule_api(dut_id, 'GET', '/api/schedule/execution-status')
+
+
+def remote_get_schedule_sysinfo(dut_id: str) -> Dict:
+    """Get remote DUT schedule sysinfo via curl."""
+    return _curl_remote_schedule_api(dut_id, 'GET', '/api/schedule/sysinfo')
 
 
 def ping_host(ip_address: str, timeout: int = 2) -> bool:

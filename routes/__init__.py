@@ -12,6 +12,7 @@ from routes.topology import topology_bp
 from routes.lab_monitor import lab_monitor_bp
 from routes.ports import port_bp
 from routes.health import health_bp
+from routes.schedule import schedule_bp
 
 # LLDP blueprint to be implemented
 lldp_bp = Blueprint('lldp', __name__, url_prefix='/api/lldp')
@@ -23,5 +24,6 @@ __all__ = [
     'lab_monitor_bp',
     'port_bp',
     'health_bp',
-    'lldp_bp'
+    'lldp_bp',
+    'schedule_bp'
 ]

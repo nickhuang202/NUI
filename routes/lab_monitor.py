@@ -266,6 +266,36 @@ def api_lab_monitor_get_dut_testing(dut_id):
     return jsonify(result)
 
 
+@lab_monitor_bp.route('/dut/<dut_id>/schedule', methods=['GET'])
+def api_lab_monitor_get_dut_schedule(dut_id):
+    """Get DUT schedule settings."""
+    result = lab_monitor.get_dut_schedule(dut_id)
+    status_code = 200 if result.get('success') else 404
+    return jsonify(result), status_code
+
+
+@lab_monitor_bp.route('/dut/<dut_id>/schedule', methods=['PUT'])
+def api_lab_monitor_set_dut_schedule(dut_id):
+    """Set DUT schedule settings."""
+    data = request.get_json() or {}
+    enabled = bool(data.get('enabled', False))
+    profile_name = data.get('profile_name', '')
+
+    if enabled and not str(profile_name).strip():
+        return jsonify({'success': False, 'error': 'profile_name is required when enabled=true'}), 400
+
+    result = lab_monitor.set_dut_schedule(dut_id, enabled, profile_name)
+    status_code = 200 if result.get('success') else 404
+    return jsonify(result), status_code
+
+
+@lab_monitor_bp.route('/schedule/all', methods=['GET'])
+def api_lab_monitor_get_all_dut_schedules():
+    """Get schedule settings for all DUTs."""
+    result = lab_monitor.get_all_dut_schedules()
+    return jsonify(result)
+
+
 @lab_monitor_bp.route('/testing/check', methods=['POST'])
 def api_lab_monitor_check_testing():
     """Check if a specific DUT is running tests."""

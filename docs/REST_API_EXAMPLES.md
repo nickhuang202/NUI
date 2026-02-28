@@ -442,6 +442,88 @@ curl -X POST http://172.17.9.199:5000/api/test/procedures \
   }'
 ```
 
+  ### Schedule Profiles (Daily/Weekly/Custom)
+
+  #### Create or Update Schedule Profile
+  Saves a scheduling profile, syncs crontab, and (for repeating rules) auto-starts today's runner.
+
+  ```bash
+  curl -X POST http://172.17.9.199:5000/api/schedule/profiles \
+    -H "Content-Type: application/json" \
+    -d '{
+      "profile_name": "SAI_T0_TEST",
+      "cron_rule": {
+        "type": "daily",
+        "preview": "Every Day (Daily)"
+      },
+      "tests": [
+        {
+          "title": "Env_Test",
+          "type": "cron",
+          "startOffsetMinutes": 630,
+          "durationMinutes": 60
+        }
+      ]
+    }'
+  ```
+
+  **Example Output:**
+  ```json
+  {
+    "success": true,
+    "message": "Profile \"SAI_T0_TEST\" saved successfully",
+    "cron_synced": true,
+    "today_runner_started": true,
+    "today_runner_pid": 3264073,
+    "today_runner_reason": "started"
+  }
+  ```
+
+  #### List Schedule Profiles
+
+  ```bash
+  curl -X GET http://172.17.9.199:5000/api/schedule/profiles
+  ```
+
+  #### Get Single Schedule Profile
+
+  ```bash
+  curl -X GET http://172.17.9.199:5000/api/schedule/profiles/SAI_T0_TEST
+  ```
+
+  #### Delete Schedule Profile
+
+  ```bash
+  curl -X DELETE http://172.17.9.199:5000/api/schedule/profiles/SAI_T0_TEST
+  ```
+
+  #### Get Current Schedule Execution Status
+  Returns currently running scheduled profile and test block (used by Schedule UI Testing indicator).
+
+  ```bash
+  curl -X GET http://172.17.9.199:5000/api/schedule/execution-status
+  ```
+
+  **Example Output:**
+  ```json
+  {
+    "success": true,
+    "status": {
+      "running": true,
+      "profile_name": "SAI_T0_TEST",
+      "current_test_title": "Env_Test",
+      "pid": 3264073,
+      "updated_at": "2026-02-28T10:30:00.000750"
+    }
+  }
+  ```
+
+  #### Get Schedule Page Sysinfo
+
+  ```bash
+  curl -X GET http://172.17.9.199:5000/api/schedule/sysinfo
+  ```
+
 ---
 
 ## 7. Lab Monitor
