@@ -49,9 +49,9 @@ def test_save_profile_daily_auto_starts_runner(mock_sync, mock_start_runner, cli
     mock_start_runner.assert_called_once_with('AUTO_START_DAILY')
 
 
-@patch('routes.schedule._start_today_runner')
+@patch('routes.schedule._start_today_runner', return_value=(True, 77777, 'started'))
 @patch('routes.schedule.cron_service.sync_profile', return_value=True)
-def test_save_profile_single_does_not_auto_start_runner(mock_sync, mock_start_runner, client):
+def test_save_profile_single_auto_starts_runner(mock_sync, mock_start_runner, client):
     payload = {
         'profile_name': 'SINGLE_RULE_PROFILE',
         'cron_rule': {
@@ -75,8 +75,8 @@ def test_save_profile_single_does_not_auto_start_runner(mock_sync, mock_start_ru
     assert response.status_code == 200
     data = response.get_json()
     assert data['success'] is True
-    assert data['today_runner_started'] is False
-    assert data['today_runner_pid'] is None
-    assert data['today_runner_reason'] == 'not-repeating-rule'
+    assert data['today_runner_started'] is True
+    assert data['today_runner_pid'] == 77777
+    assert data['today_runner_reason'] == 'started'
     mock_sync.assert_called_once()
-    mock_start_runner.assert_not_called()
+    mock_start_runner.assert_called_once_with('SINGLE_RULE_PROFILE')

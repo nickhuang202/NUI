@@ -73,6 +73,10 @@ def _is_repeating_rule(rule_type):
     return rule_type in ('daily', 'weekly', 'monthly', 'custom')
 
 
+def _should_auto_start_today_runner(rule_type):
+    return rule_type in ('single', 'daily', 'weekly', 'monthly', 'custom')
+
+
 def _is_profile_runner_active(profile_name):
     """Check whether a runner process for a specific profile is already active."""
     for proc in psutil.process_iter(['cmdline']):
@@ -91,7 +95,7 @@ def _is_profile_runner_active(profile_name):
 
 
 def _start_today_runner(profile_name):
-    """Start today's runner immediately after saving repeating schedule profiles."""
+    """Start today's runner immediately after saving an auto-startable schedule profile."""
     if _is_profile_runner_active(profile_name):
         return False, None, 'already-running'
 
@@ -286,9 +290,9 @@ def save_profile():
 
         today_runner_started = False
         today_runner_pid = None
-        today_runner_reason = 'not-repeating-rule'
+        today_runner_reason = 'rule-not-auto-started'
 
-        if _is_repeating_rule(rule_type) and isinstance(tests, list) and len(tests) > 0:
+        if _should_auto_start_today_runner(rule_type) and isinstance(tests, list) and len(tests) > 0:
             try:
                 today_runner_started, today_runner_pid, today_runner_reason = _start_today_runner(profile_name)
             except Exception as runner_error:
@@ -296,7 +300,7 @@ def save_profile():
                 today_runner_started = False
                 today_runner_pid = None
                 today_runner_reason = 'start-failed'
-        elif _is_repeating_rule(rule_type):
+        elif _should_auto_start_today_runner(rule_type):
             today_runner_reason = 'no-tests'
         
         logger.info(

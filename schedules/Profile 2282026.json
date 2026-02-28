@@ -8,7 +8,7 @@
     {
       "title": "Nick_SAI_Test",
       "type": "event",
-      "startOffsetMinutes": 900,
+      "startOffsetMinutes": 1200,
       "durationMinutes": 60
     }
   ]
