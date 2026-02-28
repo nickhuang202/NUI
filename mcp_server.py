@@ -144,6 +144,49 @@ async def set_schedule_profile_daily_time(profile_name: str, hour: int, minute: 
         except httpx.RequestError as e:
             return f"Request to NUI API failed: {e}"
 
+
+@mcp.tool()
+async def set_profile_test_time(profile_name: str, test_title: str, hour: int, minute: int = 0) -> str:
+    """Set one test block start time in a profile while keeping existing cron_rule unchanged."""
+    if hour < 0 or hour > 23:
+        return "Invalid hour. Expected 0-23."
+    if minute < 0 or minute > 59:
+        return "Invalid minute. Expected 0-59."
+
+    target_offset_minutes = (hour * 60) + minute
+
+    async with httpx.AsyncClient() as client:
+        try:
+            get_response = await client.get(f"{NUI_API_BASE}/schedule/profiles/{profile_name}")
+            get_response.raise_for_status()
+            get_data = get_response.json()
+            if not get_data.get('success'):
+                return str(get_data)
+
+            profile_data = get_data.get('data') or {}
+            profile_data['profile_name'] = profile_name
+
+            tests = profile_data.get('tests')
+            if not isinstance(tests, list):
+                return f"Invalid profile format: tests is not a list for profile '{profile_name}'"
+
+            updated = False
+            for test in tests:
+                if isinstance(test, dict) and str(test.get('title', '')).strip() == str(test_title).strip():
+                    test['startOffsetMinutes'] = target_offset_minutes
+                    updated = True
+
+            if not updated:
+                return f"Test '{test_title}' not found in profile '{profile_name}'"
+
+            save_response = await client.post(f"{NUI_API_BASE}/schedule/profiles", json=profile_data)
+            save_response.raise_for_status()
+            return str(save_response.json())
+        except httpx.HTTPStatusError as e:
+            return f"Error connecting to NUI API: {e}"
+        except httpx.RequestError as e:
+            return f"Request to NUI API failed: {e}"
+
 if __name__ == "__main__":
     import asyncio
     

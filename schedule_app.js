@@ -253,10 +253,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    async function loadSavedProfilesList() {
+    async function loadSavedProfilesList(options = {}) {
+        const autoLoad = options.autoLoad !== false;
+        const forceSelect = (options.forceSelect || '').trim();
+
         if (!loadProfileSelect) return;
         try {
-            const res = await fetch(scheduleApiUrl('/api/schedule/profiles'));
+            loadProfileSelect.innerHTML = '<option value="">-- Load Profile --</option>';
+
+            const res = await fetch(scheduleApiUrl('/api/schedule/profiles'), {
+                cache: 'no-store'
+            });
             const data = await res.json();
             if (data.success && data.profiles) {
                 data.profiles.forEach(p => {
@@ -265,6 +272,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                     option.textContent = p.name;
                     loadProfileSelect.appendChild(option);
                 });
+
+                if (forceSelect) {
+                    loadProfileSelect.value = forceSelect;
+                    return;
+                }
+
+                if (!autoLoad) {
+                    return;
+                }
 
                 // URL override: /schedule?profile=<name>
                 if (requestedProfileFromUrl) {
@@ -363,8 +379,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     // Save to local storage and show delete button
+                    loadedProfileName = profileName;
                     localStorage.setItem('lastLoadedProfile', profileName);
                     if (deleteBtn) deleteBtn.style.display = 'inline-block';
+
+                    await loadSavedProfilesList({ autoLoad: false, forceSelect: profileName });
 
                     applyExecutionStatusToBlocks();
                     requestAnimationFrame(scrollToFirstScheduledBlock);
@@ -789,6 +808,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 profileTitleDisplay.innerText = `Profile: ${profileName}`;
                 profileScheduleDisplay.innerText = `Schedule active: ${rulePreviewText.innerText} on ${currentPlatform}`;
                 profileScheduleDisplay.style.color = 'var(--color-cron)'; // Make it pop visually
+
+                loadedProfileName = profileName;
+                localStorage.setItem('lastLoadedProfile', profileName);
+
+                await loadSavedProfilesList({ autoLoad: false, forceSelect: profileName });
 
                 // 4.1 If opened from Lab Monitor, assign the saved profile back to this DUT
                 if (scheduleSource === 'monitor' && dutIdFromUrl) {

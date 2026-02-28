@@ -1,13 +1,13 @@
 {
   "cron_rule": {
-    "preview": "Single Run (Today Only)",
-    "type": "single"
+    "preview": "Every Day (Daily)",
+    "type": "daily"
   },
-  "profile_name": "Profile 2/28/2026",
+  "profile_name": "Nick_Test1",
   "tests": [
     {
       "durationMinutes": 60,
-      "startOffsetMinutes": 1260,
+      "startOffsetMinutes": 1380,
       "title": "Nick_SAI_Test",
       "type": "event"
     }
