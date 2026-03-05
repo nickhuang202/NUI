@@ -5,6 +5,7 @@ import psutil
 import socket
 import sys
 import subprocess
+from datetime import datetime
 from flask import Blueprint, jsonify, request
 
 from services.crontab_service import CrontabService
@@ -75,6 +76,28 @@ def _is_repeating_rule(rule_type):
 
 def _should_auto_start_today_runner(rule_type):
     return rule_type in ('single', 'daily', 'weekly', 'monthly', 'custom')
+
+
+def _has_upcoming_tests_today(tests):
+    """Return True when at least one test has a start offset not earlier than current minute of day."""
+    if not isinstance(tests, list) or not tests:
+        return False
+
+    now = datetime.now()
+    current_minutes = (now.hour * 60) + now.minute
+
+    for test in tests:
+        if not isinstance(test, dict):
+            continue
+        try:
+            start_offset = int(test.get('startOffsetMinutes', 0))
+        except (TypeError, ValueError):
+            continue
+
+        if start_offset >= current_minutes:
+            return True
+
+    return False
 
 
 def _is_profile_runner_active(profile_name):
@@ -293,13 +316,16 @@ def save_profile():
         today_runner_reason = 'rule-not-auto-started'
 
         if _should_auto_start_today_runner(rule_type) and isinstance(tests, list) and len(tests) > 0:
-            try:
-                today_runner_started, today_runner_pid, today_runner_reason = _start_today_runner(profile_name)
-            except Exception as runner_error:
-                logger.warning(f"[SCHEDULE] Failed to auto-start today runner for '{profile_name}': {runner_error}")
-                today_runner_started = False
-                today_runner_pid = None
-                today_runner_reason = 'start-failed'
+            if _has_upcoming_tests_today(tests):
+                try:
+                    today_runner_started, today_runner_pid, today_runner_reason = _start_today_runner(profile_name)
+                except Exception as runner_error:
+                    logger.warning(f"[SCHEDULE] Failed to auto-start today runner for '{profile_name}': {runner_error}")
+                    today_runner_started = False
+                    today_runner_pid = None
+                    today_runner_reason = 'start-failed'
+            else:
+                today_runner_reason = 'no-upcoming-tests-today'
         elif _should_auto_start_today_runner(rule_type):
             today_runner_reason = 'no-tests'
         

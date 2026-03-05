@@ -148,6 +148,7 @@ def run_test_item(test_item, profile_name, dry_run=False):
     test_level = procedure.get('test_level')
     topology = procedure.get('topology')
     test_items = procedure.get('test_items')
+    clean_fboss = bool(procedure.get('clean_fboss', False))
 
     if not script or not bin_file:
         logger.error(f"[{profile_name}] Procedure '{test_title}' missing required fields: script/bin")
@@ -176,6 +177,21 @@ def run_test_item(test_item, profile_name, dry_run=False):
         test_items_str = build_test_items_string(test_items)
         if test_items_str:
             cmd.append(test_items_str)
+
+    if clean_fboss:
+        if dry_run:
+            logger.info(
+                f"[{profile_name}] [DRY-RUN] Would clean /opt/fboss before '{test_title}'"
+            )
+        else:
+            try:
+                if os.path.exists('/opt/fboss'):
+                    logger.info(f"[{profile_name}] Cleaning /opt/fboss before '{test_title}'")
+                    subprocess.run(['rm', '-rf', '/opt/fboss'], timeout=10)
+                else:
+                    logger.info(f"[{profile_name}] /opt/fboss does not exist, skip clean before '{test_title}'")
+            except Exception as e:
+                logger.warning(f"[{profile_name}] Failed to clean /opt/fboss before '{test_title}': {e}")
 
     if dry_run:
         logger.info(

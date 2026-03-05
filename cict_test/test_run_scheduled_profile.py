@@ -45,6 +45,49 @@ class TestRunScheduledProfileDryRun(unittest.TestCase):
         self.assertTrue(ok)
         mock_popen.assert_not_called()
 
+    def test_run_test_item_clean_fboss_true_cleans_before_launch(self):
+        test_item = {'title': 'Env_Test'}
+        procedure = {
+            'script': 'run_all_test.sh',
+            'bin': 'demo.tar.zst',
+            'topology': 'default',
+            'test_items': {'evt_exit': True},
+            'clean_fboss': True
+        }
+
+        class FakeProcess:
+            pid = 1234
+
+        with patch.object(self.scheduler, 'load_test_procedure', return_value=procedure):
+            with patch('os.path.exists', return_value=True):
+                with patch.object(self.scheduler.subprocess, 'run') as mock_clean:
+                    with patch.object(self.scheduler.subprocess, 'Popen', return_value=FakeProcess()) as mock_popen:
+                        pid = self.scheduler.run_test_item(test_item, 'P1', dry_run=False)
+
+        self.assertEqual(pid, 1234)
+        mock_clean.assert_called_once_with(['rm', '-rf', '/opt/fboss'], timeout=10)
+        mock_popen.assert_called_once()
+
+    def test_run_test_item_clean_fboss_dry_run_does_not_clean(self):
+        test_item = {'title': 'Env_Test'}
+        procedure = {
+            'script': 'run_all_test.sh',
+            'bin': 'demo.tar.zst',
+            'topology': 'default',
+            'test_items': {'evt_exit': True},
+            'clean_fboss': True
+        }
+
+        with patch.object(self.scheduler, 'load_test_procedure', return_value=procedure):
+            with patch('os.path.exists', return_value=True):
+                with patch.object(self.scheduler.subprocess, 'run') as mock_clean:
+                    with patch.object(self.scheduler.subprocess, 'Popen') as mock_popen:
+                        ok = self.scheduler.run_test_item(test_item, 'P1', dry_run=True)
+
+        self.assertTrue(ok)
+        mock_clean.assert_not_called()
+        mock_popen.assert_not_called()
+
     def test_main_dry_run_skips_sleep_and_executes_virtual_dispatch(self):
         profile_data = {
             'tests': [

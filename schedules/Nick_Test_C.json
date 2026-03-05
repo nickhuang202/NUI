@@ -1,0 +1,15 @@
+{
+  "profile_name": "Nick_Test_C",
+  "cron_rule": {
+    "type": "daily",
+    "preview": "Every Day (Daily)"
+  },
+  "tests": [
+    {
+      "title": "Nick_SAI_Test_C",
+      "type": "single",
+      "startOffsetMinutes": 780,
+      "durationMinutes": 60
+    }
+  ]
+}

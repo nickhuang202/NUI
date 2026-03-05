@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -35,9 +36,15 @@ def test_save_profile_daily_auto_starts_runner(mock_sync, mock_start_runner, cli
         ]
     }
 
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 1, 1, 0, 0, 0, tzinfo=tz)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         with patch('routes.schedule.SCHEDULES_DIR', tmpdir):
-            response = client.post('/api/schedule/profiles', json=payload)
+            with patch('routes.schedule.datetime', FixedDateTime):
+                response = client.post('/api/schedule/profiles', json=payload)
 
     assert response.status_code == 200
     data = response.get_json()
@@ -68,9 +75,15 @@ def test_save_profile_single_auto_starts_runner(mock_sync, mock_start_runner, cl
         ]
     }
 
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 1, 1, 0, 0, 0, tzinfo=tz)
+
     with tempfile.TemporaryDirectory() as tmpdir:
         with patch('routes.schedule.SCHEDULES_DIR', tmpdir):
-            response = client.post('/api/schedule/profiles', json=payload)
+            with patch('routes.schedule.datetime', FixedDateTime):
+                response = client.post('/api/schedule/profiles', json=payload)
 
     assert response.status_code == 200
     data = response.get_json()
@@ -80,3 +93,41 @@ def test_save_profile_single_auto_starts_runner(mock_sync, mock_start_runner, cl
     assert data['today_runner_reason'] == 'started'
     mock_sync.assert_called_once()
     mock_start_runner.assert_called_once_with('SINGLE_RULE_PROFILE')
+
+@patch('routes.schedule._start_today_runner')
+@patch('routes.schedule.cron_service.sync_profile', return_value=True)
+def test_save_profile_when_today_time_passed_does_not_auto_start_runner(mock_sync, mock_start_runner, client):
+    payload = {
+        'profile_name': 'PAST_TIME_PROFILE',
+        'cron_rule': {
+            'type': 'single',
+            'preview': 'Single Run (Today Only)'
+        },
+        'tests': [
+            {
+                'title': 'Env_Test',
+                'type': 'cron',
+                'startOffsetMinutes': 30,
+                'durationMinutes': 60
+            }
+        ]
+    }
+
+    class FixedDateTime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 1, 1, 20, 0, 0, tzinfo=tz)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with patch('routes.schedule.SCHEDULES_DIR', tmpdir):
+            with patch('routes.schedule.datetime', FixedDateTime):
+                response = client.post('/api/schedule/profiles', json=payload)
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['success'] is True
+    assert data['today_runner_started'] is False
+    assert data['today_runner_pid'] is None
+    assert data['today_runner_reason'] == 'no-upcoming-tests-today'
+    mock_sync.assert_called_once()
+    mock_start_runner.assert_not_called()
