@@ -8,12 +8,16 @@ from datetime import datetime, timedelta
 import subprocess
 import time
 
+# Ensure logs directory exists before setting up logging
+_logs_dir = '/home/NUI/logs'
+os.makedirs(_logs_dir, exist_ok=True)
+
 # Setup logging suitable for a background cron job
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] [CRON_RUNNER] %(message)s',
     handlers=[
-        logging.FileHandler('/home/NUI/logs/scheduler.log'),
+        logging.FileHandler(os.path.join(_logs_dir, 'scheduler.log')),
         logging.StreamHandler()
     ]
 )
