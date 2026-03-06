@@ -69,7 +69,7 @@ case "$DETECTED_PLATFORM" in
     ./bin/run_test.py sai --filter_file=/opt/fboss/share/hw_sanity_tests/${TEST_LEVEL}_sai_tests.conf --known-bad-tests-file /opt/fboss/share/hw_known_bad_tests/sai_known_bad_tests.materialized_JSON  --skip-known-bad-tests "brcm/13.3.0.0_odp/13.3.0.0_odp/tomahawk5" --config $AGENT_CONFIG --mgmt-if eth0 2>&1 | tee $LINK_TEST_LOG
 		;;
 	WEDGE800BACT)
-    ./bin/run_test.py sai --filter_file=/opt/fboss/share/hw_sanity_tests/${TEST_LEVEL}_sai_tests.conf --known-bad-tests-file /opt/fboss/share/hw_known_bad_tests/sai_known_bad_tests.materialized_JSON  --skip-known-bad-tests "brcm/13.3.0.0_odp/13.3.0.0_odp/tomahawk5" --config $AGENT_CONFIG --fruid-path $FRU_CONFIG --mgmt-if eth0 --platform_mapping_override_path  $PLAT_MAP_CONFIG 2>&1 | tee $LINK_TEST_LOG
+    ./bin/run_test.py sai --filter_file=/opt/fboss/share/hw_sanity_tests/${TEST_LEVEL}_sai_tests.conf --known-bad-tests-file /opt/fboss/share/hw_known_bad_tests/sai_known_bad_tests.materialized_JSON  --skip-known-bad-tests "brcm/13.3.0.0_odp/13.3.0.0_odp/tomahawk5" --config $AGENT_CONFIG --fruid-path $FRU_CONFIG --mgmt-if eth0 2>&1 | tee $LINK_TEST_LOG
 		;;
 	WEDGE800CACT)
     ./bin/run_test.py sai --filter_file=/opt/fboss/share/hw_sanity_tests/${TEST_LEVEL}_sai_tests.conf --known-bad-tests-file /opt/fboss/share/hw_known_bad_tests/sai_known_bad_tests.materialized_JSON  --skip-known-bad-tests "brcm/13.3.0.0_odp/13.3.0.0_odp/tomahawk5" --config $AGENT_CONFIG --fruid-path $FRU_CONFIG --mgmt-if eth0 --platform_mapping_override_path  $PLAT_MAP_CONFIG 2>&1 | tee $LINK_TEST_LOG

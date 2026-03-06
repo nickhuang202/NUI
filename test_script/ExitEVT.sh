@@ -162,7 +162,7 @@ case "$DETECTED_PLATFORM" in
 	./bin/run_test.py link --filter="$TEST_CASES" --agent-run-mode mono  --config $AGENT_CONFIG --qsfp-config $QSFP_CONFIG  --mgmt-if eth0 2>&1 | tee "$LINK_TEST_LOG"
 		;;
 	WEDGE800BACT)
-	./bin/run_test.py link --filter="$TEST_CASES" --agent-run-mode mono  --config $AGENT_CONFIG --qsfp-config $QSFP_CONFIG  --fruid-path=$FRU_CONFIG --mgmt-if eth0 --platform_mapping_override_path $PLAT_MAP_CONFIG 2>&1 | tee "$LINK_TEST_LOG"
+	./bin/run_test.py link --filter="$TEST_CASES" --agent-run-mode mono  --config $AGENT_CONFIG --qsfp-config $QSFP_CONFIG  --fruid-path=$FRU_CONFIG --mgmt-if eth0 2>&1 | tee "$LINK_TEST_LOG"
 		;;
 	WEDGE800CACT)
 	./bin/run_test.py link --filter="$TEST_CASES" --agent-run-mode mono  --config $AGENT_CONFIG --qsfp-config $QSFP_CONFIG  --fruid-path=$FRU_CONFIG --mgmt-if eth0 --platform_mapping_override_path $PLAT_MAP_CONFIG 2>&1 | tee "$LINK_TEST_LOG"
