@@ -1540,26 +1540,26 @@
                             <label
                                 style="display: flex; align-items: center; cursor: pointer; color: #ecf0f1; font-weight: bold;">
                                 <input type="checkbox" id="saiTestCheckbox" checked
-                                    onchange="toggleTestLevels('sai'); saveRunTestSelections();"
+                                    onchange="toggleTestLevels('sai'); saveRunTestSelections(); updateTestItemDurationsUI();"
                                     style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
                                 <span style="font-size: 14px;">SAI Test</span>
                             </label>
                             <div id="saiLevels" style="margin-left: 35px; margin-top: 8px; display: flex; gap: 15px;">
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="saiT0Checkbox" class="sai-level" value="t0" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T0</span>
                                 </label>
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="saiT1Checkbox" class="sai-level" value="t1" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T1</span>
                                 </label>
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="saiT2Checkbox" class="sai-level" value="t2" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T2</span>
                                 </label>
@@ -1571,7 +1571,7 @@
                             <label
                                 style="display: flex; align-items: center; cursor: pointer; color: #ecf0f1; font-weight: bold;">
                                 <input type="checkbox" id="agentHwTestCheckbox" checked
-                                    onchange="toggleTestLevels('agenthw'); saveRunTestSelections();"
+                                    onchange="toggleTestLevels('agenthw'); saveRunTestSelections(); updateTestItemDurationsUI();"
                                     style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
                                 <span style="font-size: 14px;">Agent HW Test</span>
                             </label>
@@ -1579,19 +1579,19 @@
                                 style="margin-left: 35px; margin-top: 8px; display: flex; gap: 15px;">
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="agentT0Checkbox" class="agenthw-level" value="t0" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T0</span>
                                 </label>
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="agentT1Checkbox" class="agenthw-level" value="t1" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T1</span>
                                 </label>
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="agentT2Checkbox" class="agenthw-level" value="t2" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T2</span>
                                 </label>
@@ -1603,20 +1603,20 @@
                             <label
                                 style="display: flex; align-items: center; cursor: pointer; color: #ecf0f1; font-weight: bold;">
                                 <input type="checkbox" id="linkTestCheckbox" checked
-                                    onchange="toggleTestLevels('link'); saveRunTestSelections();"
+                                    onchange="toggleTestLevels('link'); saveRunTestSelections(); updateTestItemDurationsUI();"
                                     style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
                                 <span style="font-size: 14px;">Link Test</span>
                             </label>
                             <div id="linkLevels" style="margin-left: 35px; margin-top: 8px; display: flex; gap: 15px;">
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="linkT0Checkbox" class="link-level" value="t0" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T0</span>
                                 </label>
                                 <label style="display: flex; align-items: center; cursor: pointer; color: #95a5a6;">
                                     <input type="checkbox" id="linkT1Checkbox" class="link-level" value="t1" checked
-                                        onchange="saveRunTestSelections()"
+                                        onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                         style="width: 16px; height: 16px; margin-right: 6px; cursor: pointer;">
                                     <span style="font-size: 13px;">T1</span>
                                 </label>
@@ -1633,7 +1633,7 @@
                         <div style="margin-bottom: 0px;">
                             <label
                                 style="display: flex; align-items: center; cursor: pointer; color: #ecf0f1; font-weight: bold;">
-                                <input type="checkbox" id="evtTestCheckbox" checked onchange="saveRunTestSelections()"
+                                <input type="checkbox" id="evtTestCheckbox" checked onchange="saveRunTestSelections(); updateTestItemDurationsUI();"
                                     style="width: 20px; height: 20px; margin-right: 10px; cursor: pointer;">
                                 <span style="font-size: 14px;">EVT Exit Test</span>
                             </label>
@@ -1706,8 +1706,15 @@
                         style="background: rgba(33, 150, 243, 0.1); padding: 20px; border-radius: 8px; border: 2px solid rgba(33, 150, 243, 0.3);">
                         <div style="margin-bottom: 15px; color: #95a5a6; font-size: 13px;">
                             Save the current test configuration for quick access later. The procedure will include:
-                            script, bin file, test level, topology type, topology file, and clean option.
+                            script, bin file, test level, topology type, topology file, clean option, and test item durations.
                         </div>
+                        
+                        <!-- Test Item Duration Configuration -->
+                        <div style="margin-bottom: 15px; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 6px;">
+                            <div style="color: #4CAF50; font-weight: bold; margin-bottom: 10px; font-size: 12px;">⏱️ Test Item Durations (minutes)</div>
+                            <div id="testItemDurationsContainer" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;"></div>
+                        </div>
+
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="text" id="procedureNameInput"
                                 placeholder="Enter procedure name (e.g., copper_test_t0)"
@@ -1894,6 +1901,9 @@
                     restoreTransceiverView();
                 }, 300);
             }
+
+            // Initialize test item durations UI
+            updateTestItemDurationsUI();
         });
 
         let transceiverRefreshTimer = null;
@@ -5950,6 +5960,101 @@
                 });
         }
 
+        // Update test item durations UI
+        function updateTestItemDurationsUI() {
+            const container = document.getElementById('testItemDurationsContainer');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const testItems = [
+                { id: 'saiT0Checkbox', label: 'SAI T0', key: 'sai_t0', duration: 7 },
+                { id: 'saiT1Checkbox', label: 'SAI T1', key: 'sai_t1', duration: 12 },
+                { id: 'saiT2Checkbox', label: 'SAI T2', key: 'sai_t2', duration: 20 },
+                { id: 'agentT0Checkbox', label: 'Agent HW T0', key: 'agent_t0', duration: 150 },
+                { id: 'agentT1Checkbox', label: 'Agent HW T1', key: 'agent_t1', duration: 159 },
+                { id: 'agentT2Checkbox', label: 'Agent HW T2', key: 'agent_t2', duration: 40 },
+                { id: 'linkT0Checkbox', label: 'Link T0', key: 'link_t0', duration: 14 },
+                { id: 'linkT1Checkbox', label: 'Link T1', key: 'link_t1', duration: 91 },
+                { id: 'evtTestCheckbox', label: 'EVT Exit', key: 'evt_exit', duration: 5 }
+            ];
+            
+            // Check if item is enabled and create input field
+            testItems.forEach(item => {
+                const checkbox = document.getElementById(item.id);
+                if (checkbox && checkbox.checked) {
+                    const wrapper = document.createElement('div');
+                    wrapper.style.display = 'flex';
+                    wrapper.style.flexDirection = 'column';
+                    wrapper.style.gap = '5px';
+                    
+                    const label = document.createElement('label');
+                    label.style.fontSize = '11px';
+                    label.style.color = '#95a5a6';
+                    label.textContent = item.label;
+                    
+                    const input = document.createElement('input');
+                    input.type = 'number';
+                    input.id = `duration_${item.key}`;
+                    input.min = '1';
+                    input.max = '600';
+
+                    const storageKey = `test_duration_${item.key}`;
+                    const cachedValue = localStorage.getItem(storageKey);
+                    const parsedCachedValue = cachedValue !== null ? parseInt(cachedValue, 10) : NaN;
+
+                    const legacyDefaultMap = {
+                        sai_t1: [10],
+                        sai_t2: [15],
+                        agent_t0: [7],
+                        agent_t1: [10],
+                        agent_t2: [15],
+                        link_t0: [5],
+                        link_t1: [10]
+                    };
+                    const shouldMigrate = (legacyDefaultMap[item.key] || []).includes(parsedCachedValue);
+                    const migratedValue = shouldMigrate ? item.duration : parsedCachedValue;
+
+                    if (!Number.isNaN(migratedValue)) {
+                        input.value = migratedValue;
+                        if (migratedValue !== parsedCachedValue) {
+                            localStorage.setItem(storageKey, String(migratedValue));
+                        }
+                    } else {
+                        input.value = item.duration;
+                    }
+                    input.style.padding = '6px';
+                    input.style.background = 'rgba(0,0,0,0.3)';
+                    input.style.border = '1px solid rgba(255,255,255,0.3)';
+                    input.style.borderRadius = '4px';
+                    input.style.color = 'white';
+                    input.style.fontSize = '12px';
+                    input.style.textAlign = 'center';
+                    
+                    input.addEventListener('change', (e) => {
+                        localStorage.setItem(`test_duration_${item.key}`, e.target.value);
+                    });
+                    
+                    wrapper.appendChild(label);
+                    wrapper.appendChild(input);
+                    container.appendChild(wrapper);
+                }
+            });
+        }
+
+        // Get all test item durations
+        function getTestItemDurations() {
+            const durations = {};
+            const inputs = document.querySelectorAll('[id^="duration_"]');
+            
+            inputs.forEach(input => {
+                const key = input.id.replace('duration_', '');
+                durations[key] = parseInt(input.value, 10) || 0;
+            });
+            
+            return durations;
+        }
+
         // Save current test procedure
         function saveTestProcedure() {
             const procedureName = document.getElementById('procedureNameInput').value.trim();
@@ -6009,6 +6114,9 @@
                 testItems.evt_exit = evtTestCheckbox.checked;
             }
 
+            // Collect test item durations
+            const testItemDurations = getTestItemDurations();
+
             const config = {
                 platform: currentPlatform,  // Save current platform
                 script: document.getElementById('testScriptSelect').value,
@@ -6017,7 +6125,8 @@
                 topology: topology,
                 topology_file: document.getElementById('topologyFileSelect').value,
                 clean_fboss: document.getElementById('cleanFbossCheckbox').checked,
-                test_items: testItems  // Add test items
+                test_items: testItems,  // Add test items
+                test_item_durations: testItemDurations  // Add test item durations in minutes
             };
 
             // Log configuration for debugging

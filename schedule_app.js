@@ -142,15 +142,38 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             const types = ['cron', 'event', 'single'];
 
-            procedures.forEach((procName, index) => {
+            // Load procedure details and calculate durations
+            for (let index = 0; index < procedures.length; index++) {
+                const procName = procedures[index];
                 const type = types[index % types.length];
-                const durationMins = 60; // Default placeholder duration
+                
+                // Fetch procedure details to get test item durations
+                let durationMins = 60; // Default
+                try {
+                    const procResponse = await fetch(`/api/test/procedures/${encodeURIComponent(procName)}`);
+                    if (procResponse.ok) {
+                        const procData = await procResponse.json();
+                        if (procData.success && procData.config) {
+                            // Calculate total duration from test item durations
+                            const durations = procData.config.test_item_durations || {};
+                            const itemDurations = Object.values(durations).filter(v => typeof v === 'number');
+                            if (itemDurations.length > 0) {
+                                // Sum all test item durations
+                                durationMins = itemDurations.reduce((sum, val) => sum + val, 0);
+                                console.log(`[Schedule] Procedure "${procName}" calculated duration: ${durationMins} mins`);
+                            }
+                        }
+                    }
+                } catch (err) {
+                    console.warn(`Failed to load details for procedure "${procName}":`, err);
+                }
 
                 const itemDiv = document.createElement('div');
                 itemDiv.className = `test-item ${type}-trigger`;
                 itemDiv.draggable = true;
                 itemDiv.dataset.type = type;
                 itemDiv.dataset.duration = durationMins;
+                itemDiv.dataset.procName = procName;
 
                 itemDiv.innerHTML = `
                     <div class="title">${procName}</div>
@@ -165,13 +188,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         title: itemDiv.querySelector('.title').innerText,
                         type: itemDiv.dataset.type,
                         duration: dMins,
-                        width: (dMins / 60) * pixelsPerHour
+                        width: (dMins / 60) * pixelsPerHour,
+                        procedureName: itemDiv.dataset.procName
                     };
                     e.dataTransfer.effectAllowed = 'copy';
                 });
 
                 testPalette.appendChild(itemDiv);
-            });
+            }
         } catch (error) {
             console.error("Failed to load test procedures:", error);
             testPalette.innerHTML = '<div style="padding:10px; color:#e74c3c; text-align:center; font-size:0.9rem;">Failed to load.</div>';
@@ -186,6 +210,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     let loadedProfileName = null;
     let latestExecutionStatus = null;
 
+    function formatDurationWithMinutes(totalMinutesRaw) {
+        const totalMinutes = Math.max(0, Math.round(totalMinutesRaw || 0));
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        const hmText = hours > 0 ? `${hours}h ${minutes}m` : `${totalMinutes}m`;
+        return `${hmText} (${totalMinutes} min)`;
+    }
+
     function updateLoadedProfileSubtitle() {
         const subtitle = document.getElementById('profile-schedule-display');
         if (!subtitle) return;
@@ -195,7 +227,21 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        let subtitleHtml = `Loaded Profile: ${loadedProfileName}`;
+        // Calculate total duration from scheduled blocks
+        const blocks = Array.from(track.querySelectorAll('.scheduled-block'));
+        let lastEndTime = 0;
+        blocks.forEach(block => {
+            const leftPx = parseFloat(block.style.left);
+            const widthPx = parseFloat(block.style.width);
+            const startMinutes = (leftPx / pixelsPerHour) * 60;
+            const durationMinutes = (widthPx / pixelsPerHour) * 60;
+            const endTime = startMinutes + durationMinutes;
+            lastEndTime = Math.max(lastEndTime, endTime);
+        });
+
+        const durationStr = formatDurationWithMinutes(lastEndTime);
+
+        let subtitleHtml = `Loaded Profile: ${loadedProfileName} • ⏱️ Duration: ${durationStr}`;
         const runningProfile = latestExecutionStatus?.profile_name;
         const runningTitle = latestExecutionStatus?.current_test_title;
         const isRunning = Boolean(latestExecutionStatus?.running);
@@ -650,6 +696,31 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Sort blocks by horizontal position (time)
             existingBlocks.sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
 
+            // Calculate total duration
+            let lastEndTime = 0;
+            
+            existingBlocks.forEach(block => {
+                const leftPx = parseFloat(block.style.left);
+                const widthPx = parseFloat(block.style.width);
+                const startMinutes = (leftPx / pixelsPerHour) * 60;
+                const durationMinutes = (widthPx / pixelsPerHour) * 60;
+                const endMinutes = startMinutes + durationMinutes;
+                
+                lastEndTime = Math.max(lastEndTime, endMinutes);
+            });
+
+            // Display summary info including total time
+            const roundedEndMinutes = Math.max(0, Math.round(lastEndTime));
+            const totalHours = Math.floor(roundedEndMinutes / 60);
+            const totalMins = roundedEndMinutes % 60;
+            const totalDurationDisplay = formatDurationWithMinutes(roundedEndMinutes);
+            
+            // Add total time display to summary
+            const totalTimeLabel = document.createElement('li');
+            totalTimeLabel.style.cssText = 'background: rgba(76, 175, 80, 0.2); padding: 8px 12px; border-radius: 4px; border-left: 3px solid #4CAF50; font-weight: bold; color: #4CAF50; margin-bottom: 10px;';
+            totalTimeLabel.innerHTML = `⏱️ Total Duration: ${totalDurationDisplay} (from 00:00 to ${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')})`;
+            summaryList.appendChild(totalTimeLabel);
+
             existingBlocks.forEach(block => {
                 const title = block.querySelector('.block-title').innerText;
                 const time = block.querySelector('.block-time').innerText;
@@ -806,7 +877,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (result.success) {
                 // 4. Update the main header to reflect the saved profile and its rule
                 profileTitleDisplay.innerText = `Profile: ${profileName}`;
-                profileScheduleDisplay.innerText = `Schedule active: ${rulePreviewText.innerText} on ${currentPlatform}`;
+                
+                // Calculate total test duration for display
+                let lastEndTime = 0;
+                tests.forEach(test => {
+                    const endTime = test.startOffsetMinutes + test.durationMinutes;
+                    lastEndTime = Math.max(lastEndTime, endTime);
+                });
+                const durationStr = formatDurationWithMinutes(lastEndTime);
+                
+                profileScheduleDisplay.innerText = `Schedule active: ${rulePreviewText.innerText} on ${currentPlatform} • ⏱️ Duration: ${durationStr}`;
                 profileScheduleDisplay.style.color = 'var(--color-cron)'; // Make it pop visually
 
                 loadedProfileName = profileName;
