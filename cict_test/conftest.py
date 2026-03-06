@@ -1,16 +1,9 @@
 """Pytest configuration and shared fixtures."""
 
 import os
-import pytest
 
-
-@pytest.fixture(scope="session", autouse=True)
-def setup_test_environment():
-    """Ensure test environment directories exist."""
-    # Create logs directory if it doesn't exist
-    logs_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'logs')
-    os.makedirs(logs_dir, exist_ok=True)
-    
-    yield
-    
-    # Cleanup is optional - you can remove this if you want to keep logs
+# Create required directories BEFORE any test modules are imported
+# This is critical because run_scheduled_profile.py sets up logging during import
+_root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+_logs_dir = os.path.join(_root_dir, 'logs')
+os.makedirs(_logs_dir, exist_ok=True)
