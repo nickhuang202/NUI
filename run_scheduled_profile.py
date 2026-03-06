@@ -7,17 +7,23 @@ import argparse
 from datetime import datetime, timedelta
 import subprocess
 import time
+import tempfile
 
 # Ensure logs directory exists before setting up logging
 _logs_dir = '/home/NUI/logs'
-os.makedirs(_logs_dir, exist_ok=True)
+try:
+    os.makedirs(_logs_dir, exist_ok=True)
+    _log_file = os.path.join(_logs_dir, 'scheduler.log')
+except (OSError, PermissionError):
+    # Fallback to temp directory if /home/NUI/logs is not writable
+    _log_file = os.path.join(tempfile.gettempdir(), 'scheduler.log')
 
 # Setup logging suitable for a background cron job
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] [CRON_RUNNER] %(message)s',
     handlers=[
-        logging.FileHandler(os.path.join(_logs_dir, 'scheduler.log')),
+        logging.FileHandler(_log_file),
         logging.StreamHandler()
     ]
 )
