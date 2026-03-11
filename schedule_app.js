@@ -218,6 +218,39 @@ document.addEventListener('DOMContentLoaded', async () => {
         return `${hmText} (${totalMinutes} min)`;
     }
 
+    function formatClockTime(totalMinutesRaw) {
+        const totalMinutes = Math.max(0, Math.round(totalMinutesRaw || 0));
+        const hours = Math.floor(totalMinutes / 60);
+        const minutes = totalMinutes % 60;
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+    }
+
+    function getScheduleMetrics(blocks) {
+        let totalDurationMinutes = 0;
+        let firstStartMinutes = null;
+        let lastEndMinutes = 0;
+
+        blocks.forEach(block => {
+            const leftPx = parseFloat(block.style.left) || 0;
+            const widthPx = parseFloat(block.style.width) || 0;
+            const startMinutes = (leftPx / pixelsPerHour) * 60;
+            const durationMinutes = (widthPx / pixelsPerHour) * 60;
+            const endMinutes = startMinutes + durationMinutes;
+
+            totalDurationMinutes += durationMinutes;
+            firstStartMinutes = firstStartMinutes === null
+                ? startMinutes
+                : Math.min(firstStartMinutes, startMinutes);
+            lastEndMinutes = Math.max(lastEndMinutes, endMinutes);
+        });
+
+        return {
+            totalDurationMinutes: Math.max(0, Math.round(totalDurationMinutes)),
+            firstStartMinutes: firstStartMinutes === null ? 0 : Math.max(0, Math.round(firstStartMinutes)),
+            lastEndMinutes: Math.max(0, Math.round(lastEndMinutes))
+        };
+    }
+
     function updateLoadedProfileSubtitle() {
         const subtitle = document.getElementById('profile-schedule-display');
         if (!subtitle) return;
@@ -227,19 +260,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Calculate total duration from scheduled blocks
         const blocks = Array.from(track.querySelectorAll('.scheduled-block'));
-        let lastEndTime = 0;
-        blocks.forEach(block => {
-            const leftPx = parseFloat(block.style.left);
-            const widthPx = parseFloat(block.style.width);
-            const startMinutes = (leftPx / pixelsPerHour) * 60;
-            const durationMinutes = (widthPx / pixelsPerHour) * 60;
-            const endTime = startMinutes + durationMinutes;
-            lastEndTime = Math.max(lastEndTime, endTime);
-        });
-
-        const durationStr = formatDurationWithMinutes(lastEndTime);
+        const metrics = getScheduleMetrics(blocks);
+        const durationStr = formatDurationWithMinutes(metrics.totalDurationMinutes);
 
         let subtitleHtml = `Loaded Profile: ${loadedProfileName} • ⏱️ Duration: ${durationStr}`;
         const runningProfile = latestExecutionStatus?.profile_name;
@@ -696,29 +719,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Sort blocks by horizontal position (time)
             existingBlocks.sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
 
-            // Calculate total duration
-            let lastEndTime = 0;
-            
-            existingBlocks.forEach(block => {
-                const leftPx = parseFloat(block.style.left);
-                const widthPx = parseFloat(block.style.width);
-                const startMinutes = (leftPx / pixelsPerHour) * 60;
-                const durationMinutes = (widthPx / pixelsPerHour) * 60;
-                const endMinutes = startMinutes + durationMinutes;
-                
-                lastEndTime = Math.max(lastEndTime, endMinutes);
-            });
-
-            // Display summary info including total time
-            const roundedEndMinutes = Math.max(0, Math.round(lastEndTime));
-            const totalHours = Math.floor(roundedEndMinutes / 60);
-            const totalMins = roundedEndMinutes % 60;
-            const totalDurationDisplay = formatDurationWithMinutes(roundedEndMinutes);
+            const metrics = getScheduleMetrics(existingBlocks);
+            const totalDurationDisplay = formatDurationWithMinutes(metrics.totalDurationMinutes);
             
             // Add total time display to summary
             const totalTimeLabel = document.createElement('li');
             totalTimeLabel.style.cssText = 'background: rgba(76, 175, 80, 0.2); padding: 8px 12px; border-radius: 4px; border-left: 3px solid #4CAF50; font-weight: bold; color: #4CAF50; margin-bottom: 10px;';
-            totalTimeLabel.innerHTML = `⏱️ Total Duration: ${totalDurationDisplay} (from 00:00 to ${String(totalHours).padStart(2, '0')}:${String(totalMins).padStart(2, '0')})`;
+            totalTimeLabel.innerHTML = `⏱️ Total Duration: ${totalDurationDisplay} (window: ${formatClockTime(metrics.firstStartMinutes)} - ${formatClockTime(metrics.lastEndMinutes)})`;
             summaryList.appendChild(totalTimeLabel);
 
             existingBlocks.forEach(block => {
@@ -878,19 +885,19 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // 4. Update the main header to reflect the saved profile and its rule
                 profileTitleDisplay.innerText = `Profile: ${profileName}`;
                 
-                // Calculate total test duration for display
-                let lastEndTime = 0;
-                tests.forEach(test => {
-                    const endTime = test.startOffsetMinutes + test.durationMinutes;
-                    lastEndTime = Math.max(lastEndTime, endTime);
-                });
-                const durationStr = formatDurationWithMinutes(lastEndTime);
+                // Duration should be sum of all scheduled test durations.
+                const totalDurationMinutes = tests.reduce((sum, test) => sum + (test.durationMinutes || 0), 0);
+                const durationStr = formatDurationWithMinutes(totalDurationMinutes);
                 
                 profileScheduleDisplay.innerText = `Schedule active: ${rulePreviewText.innerText} on ${currentPlatform} • ⏱️ Duration: ${durationStr}`;
                 profileScheduleDisplay.style.color = 'var(--color-cron)'; // Make it pop visually
 
                 loadedProfileName = profileName;
                 localStorage.setItem('lastLoadedProfile', profileName);
+
+                if (deleteProfileBtn) {
+                    deleteProfileBtn.style.display = 'inline-block';
+                }
 
                 await loadSavedProfilesList({ autoLoad: false, forceSelect: profileName });
 

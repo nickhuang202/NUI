@@ -4,6 +4,7 @@ import logging
 import psutil
 import socket
 import sys
+import signal
 import subprocess
 from datetime import datetime
 from flask import Blueprint, jsonify, request
@@ -117,6 +118,58 @@ def _is_profile_runner_active(profile_name):
     return False
 
 
+def _find_runner_pids(profile_name=None):
+    """Find active schedule runner process IDs, optionally filtered by profile name."""
+    matched_pids = []
+    expected_profile = (profile_name or '').strip()
+
+    for proc in psutil.process_iter(['pid', 'cmdline']):
+        try:
+            cmdline = proc.info.get('cmdline') or []
+            if not cmdline:
+                continue
+
+            has_runner_script = any('run_scheduled_profile.py' in part for part in cmdline)
+            if not has_runner_script:
+                continue
+
+            if expected_profile and expected_profile not in cmdline:
+                continue
+
+            pid = proc.info.get('pid')
+            if isinstance(pid, int) and pid > 0:
+                matched_pids.append(pid)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+    # Deduplicate while preserving order.
+    return list(dict.fromkeys(matched_pids))
+
+
+def _terminate_runner_pid(pid):
+    """Terminate a runner process by pid, trying process-group termination first."""
+    if not isinstance(pid, int) or pid <= 0:
+        return False
+
+    try:
+        os.killpg(pid, signal.SIGTERM)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        try:
+            os.kill(pid, signal.SIGTERM)
+            return True
+        except (ProcessLookupError, PermissionError):
+            return False
+    except OSError:
+        try:
+            os.kill(pid, signal.SIGTERM)
+            return True
+        except (ProcessLookupError, PermissionError, OSError):
+            return False
+
+
 def _start_today_runner(profile_name):
     """Start today's runner immediately after saving an auto-startable schedule profile."""
     if _is_profile_runner_active(profile_name):
@@ -216,6 +269,99 @@ def get_execution_status():
     except Exception as e:
         logger.error(f"Error reading execution status: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+
+@schedule_bp.route('/profiles/<path:profile_name>/run', methods=['POST'])
+def run_profile_now(profile_name):
+    """Manually start a saved schedule profile runner immediately."""
+    filepath = get_safe_filepath(profile_name)
+    if not filepath or not os.path.exists(filepath):
+        return jsonify({'success': False, 'error': 'Profile not found'}), 404
+
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            profile_data = json.load(f)
+    except Exception as e:
+        logger.error(f"Error loading profile for run-now {profile_name}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+    tests = profile_data.get('tests', [])
+    if not isinstance(tests, list) or len(tests) == 0:
+        return jsonify({'success': False, 'error': 'Profile has no tests to run'}), 400
+
+    try:
+        started, pid, reason = _start_today_runner(profile_name)
+    except Exception as e:
+        logger.error(f"Error starting runner for profile {profile_name}: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+    if not started and reason == 'already-running':
+        return jsonify({
+            'success': True,
+            'message': f'Profile "{profile_name}" runner is already active',
+            'already_running': True,
+            'pid': pid,
+            'reason': reason
+        })
+
+    if not started:
+        return jsonify({
+            'success': False,
+            'error': f'Failed to start profile "{profile_name}"',
+            'reason': reason
+        }), 500
+
+    return jsonify({
+        'success': True,
+        'message': f'Profile "{profile_name}" runner started',
+        'already_running': False,
+        'pid': pid,
+        'reason': reason
+    })
+
+
+@schedule_bp.route('/run/stop', methods=['POST'])
+def stop_profile_runner():
+    """Stop active schedule profile runner process(es)."""
+    payload = request.get_json(silent=True) or {}
+    profile_name = (payload.get('profile_name') or '').strip()
+
+    candidate_pids = _find_runner_pids(profile_name if profile_name else None)
+    if not candidate_pids:
+        return jsonify({
+            'success': False,
+            'error': 'No active schedule runner found',
+            'profile_name': profile_name or None,
+            'stopped_pids': []
+        }), 404
+
+    stopped_pids = []
+    for pid in candidate_pids:
+        if _terminate_runner_pid(pid):
+            stopped_pids.append(pid)
+
+    if stopped_pids:
+        status = _read_execution_status()
+        status['running'] = False
+        status['current_test_title'] = None
+        if not profile_name or status.get('profile_name') == profile_name:
+            status['pid'] = None
+            if profile_name:
+                status['profile_name'] = profile_name
+        status['updated_at'] = datetime.now().isoformat()
+
+        try:
+            with open(EXECUTION_STATUS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(status, f, indent=2)
+        except Exception as e:
+            logger.warning(f"Failed to update execution status after stop: {e}")
+
+    return jsonify({
+        'success': len(stopped_pids) > 0,
+        'message': f'Stopped {len(stopped_pids)} runner process(es)',
+        'profile_name': profile_name or None,
+        'stopped_pids': stopped_pids
+    })
 
 SCHEDULES_DIR = os.path.join(os.getcwd(), 'schedules')
 if not os.path.exists(SCHEDULES_DIR):

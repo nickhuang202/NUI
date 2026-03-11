@@ -35,7 +35,7 @@ if __name__ == "__main__":
     SOURCE_DIR = "./protected_pdfs"  # 存放加密 PDF 的資料夾
     TARGET_DIR = "./unlocked_pdfs"   # 解密後的存放位置
     #MY_PASSWORD = "abcd1234"         # 這些檔案共同擁有的密碼
-    MY_PASSWORD = "12345678"         # 這些檔案共同擁有的密碼
+    MY_PASSWORD = "docs1234"         # 這些檔案共同擁有的密碼
     # -----------------------
 
     batch_unlock_pdfs(SOURCE_DIR, TARGET_DIR, MY_PASSWORD)

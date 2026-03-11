@@ -18,5 +18,8 @@
     "link_test": false,
     "link_t0": false,
     "evt_exit": false
+  },
+  "test_item_durations": {
+    "sai_t0": 12
   }
 }

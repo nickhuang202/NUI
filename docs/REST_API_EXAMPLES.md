@@ -96,7 +96,86 @@ curl -X POST http://172.17.9.199:5000/api/test/extract-bin \
 
 ---
 
-## 3. Topology Management
+## 3. Schedule Test (Daily Profile) APIs
+
+These APIs manage daily schedule profiles and execute scheduled tests.
+
+### Get Schedule System Info
+Returns hostname, platform, CPU, and memory usage for schedule UI.
+
+```bash
+curl -X GET http://172.17.9.199:5000/api/schedule/sysinfo
+```
+
+### Get Schedule Execution Status
+Returns current schedule runner status (running profile, current test title, PID).
+
+```bash
+curl -X GET http://172.17.9.199:5000/api/schedule/execution-status
+```
+
+### List Saved Schedule Profiles
+
+```bash
+curl -X GET http://172.17.9.199:5000/api/schedule/profiles
+```
+
+### Get One Schedule Profile
+
+```bash
+curl -X GET "http://172.17.9.199:5000/api/schedule/profiles/SAI_T0_only"
+```
+
+### Save Schedule Profile
+Creates or updates a profile and syncs it to crontab.
+
+```bash
+curl -X POST http://172.17.9.199:5000/api/schedule/profiles \
+  -H "Content-Type: application/json" \
+  -d '{
+    "profile_name": "SAI_T0_only",
+    "cron_rule": {
+      "type": "daily",
+      "preview": "Every Day"
+    },
+    "tests": [
+      {
+        "title": "Nick_SAI_Test_T0_only",
+        "type": "single",
+        "startOffsetMinutes": 660,
+        "durationMinutes": 30
+      }
+    ]
+  }'
+```
+
+### Run Schedule Profile Now (Manual Trigger)
+Starts `run_scheduled_profile.py` immediately for a saved profile.
+
+```bash
+curl -X POST "http://172.17.9.199:5000/api/schedule/profiles/SAI_T0_only/run"
+```
+
+### Stop Running Schedule Profile(s)
+Stops active schedule runner processes. Optional `profile_name` filters which runner to stop.
+
+```bash
+curl -X POST http://172.17.9.199:5000/api/schedule/run/stop \
+  -H "Content-Type: application/json" \
+  -d '{
+    "profile_name": "SAI_T0_only"
+  }'
+```
+
+### Delete Schedule Profile
+
+```bash
+curl -X DELETE "http://172.17.9.199:5000/api/schedule/profiles/SAI_T0_only"
+```
+
+---
+
+## 4. Topology Management
 
 ### List Topology Files
 Lists available topology files for a specific platform.
@@ -315,7 +394,7 @@ echo "Example: $0 custom_topology.materialized_JSON"
 
 ---
 
-## 4. Dashboard & Reports
+## 5. Dashboard & Reports
 
 ### Get Available Test Dates
 Returns a list of dates for which test reports exist for a given platform.
@@ -360,7 +439,7 @@ curl -X GET http://172.17.9.199:5000/api/dashboard/download_log/MINIPACK3BA/2026
 
 ---
 
-## 5. System Health & Ports
+## 6. System Health & Ports
 
 ### Check System Health
 Returns comprehensive system health status including CPU, memory, and service status.
@@ -385,7 +464,7 @@ curl -X GET http://172.17.9.199:5000/api/transceiver_info
 
 ---
 
-## 6. Test Procedures & Scripts
+## 7. Test Procedures & Scripts
 
 ### List Test Scripts
 Returns a list of available shell scripts for testing.

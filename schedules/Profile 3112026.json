@@ -1,0 +1,15 @@
+{
+  "cron_rule": {
+    "type": "custom",
+    "preview": "Cron: 27 13 * * *"
+  },
+  "profile_name": "Profile 3/11/2026",
+  "tests": [
+    {
+      "durationMinutes": 30,
+      "startOffsetMinutes": 807,
+      "title": "Nick_SAI_Test_T0_only",
+      "type": "single"
+    }
+  ]
+}

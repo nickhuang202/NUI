@@ -37,6 +37,34 @@ async def get_test_status() -> str:
 
 
 @mcp.tool()
+async def get_test_procedures() -> str:
+    """List all saved test procedures shown in Saved Procedure dropdown."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(f"{NUI_API_BASE}/test/procedures")
+            response.raise_for_status()
+            return str(response.json())
+        except httpx.HTTPStatusError as e:
+            return f"Error connecting to NUI API: {e}"
+        except httpx.RequestError as e:
+            return f"Request to NUI API failed: {e}"
+
+
+@mcp.tool()
+async def delete_test_procedure(procedure_name: str) -> str:
+    """Delete one saved test procedure by name."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.delete(f"{NUI_API_BASE}/test/procedures/{procedure_name}")
+            response.raise_for_status()
+            return str(response.json())
+        except httpx.HTTPStatusError as e:
+            return f"Error connecting to NUI API: {e}"
+        except httpx.RequestError as e:
+            return f"Request to NUI API failed: {e}"
+
+
+@mcp.tool()
 async def get_port_status() -> str:
     """View link UP/DOWN status of all ports."""
     async with httpx.AsyncClient() as client:
@@ -84,6 +112,20 @@ async def get_schedule_profile(profile_name: str) -> str:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(f"{NUI_API_BASE}/schedule/profiles/{profile_name}")
+            response.raise_for_status()
+            return str(response.json())
+        except httpx.HTTPStatusError as e:
+            return f"Error connecting to NUI API: {e}"
+        except httpx.RequestError as e:
+            return f"Request to NUI API failed: {e}"
+
+
+@mcp.tool()
+async def delete_schedule_profile(profile_name: str) -> str:
+    """Delete one saved schedule profile by name."""
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.delete(f"{NUI_API_BASE}/schedule/profiles/{profile_name}")
             response.raise_for_status()
             return str(response.json())
         except httpx.HTTPStatusError as e:

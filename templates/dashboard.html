@@ -1580,24 +1580,80 @@
         let currentDisplayMonth = new Date();
         let debugLogs = [];
         let notesCache = {}; // Cache for notes loaded from server
+        let notesFallbackCache = {}; // Carry-forward notes from previous date
+
+        function buildNoteKey(platform, date, category, level, itemName) {
+            return `note_${platform}_${date}_${category}_${level}_${itemName}`;
+        }
+
+        function buildStableNoteKey(noteKey) {
+            if (!noteKey || !currentPlatform) return noteKey;
+            const prefix = `note_${currentPlatform}_`;
+            if (!noteKey.startsWith(prefix)) return noteKey;
+
+            const suffix = noteKey.slice(prefix.length);
+            const firstUnderscore = suffix.indexOf('_');
+            if (firstUnderscore < 0) return noteKey;
+
+            // Stable part is category_level_testName and is reusable across dates.
+            return `note_${suffix.slice(firstUnderscore + 1)}`;
+        }
+
+        function getPreviousDateForFallback() {
+            if (!Array.isArray(availableDates) || !currentDate) return null;
+            const sortedDates = [...availableDates].sort((a, b) => b.localeCompare(a));
+            for (const date of sortedDates) {
+                if (date < currentDate) {
+                    return date;
+                }
+            }
+            return null;
+        }
 
         // Load notes from server
-        function loadNotesFromServer() {
+        async function loadNotesFromServer() {
             if (!currentPlatform || !currentDate) {
                 addDebugLog('Cannot load notes: platform or date not set');
                 return;
             }
 
-            fetch(`/api/dashboard/notes/${currentPlatform}/${currentDate}`)
-                .then(r => r.json())
-                .then(data => {
-                    notesCache = data || {};
-                    addDebugLog(`Loaded ${Object.keys(notesCache).length} notes from server for ${currentPlatform}/${currentDate}`);
-                })
-                .catch(err => {
-                    console.error('Error loading notes:', err);
-                    notesCache = {};
+            notesFallbackCache = {};
+
+            try {
+                const response = await fetch(`/api/dashboard/notes/${currentPlatform}/${currentDate}`);
+                const data = await response.json();
+                notesCache = data || {};
+                addDebugLog(`Loaded ${Object.keys(notesCache).length} notes from server for ${currentPlatform}/${currentDate}`);
+            } catch (err) {
+                console.error('Error loading notes:', err);
+                notesCache = {};
+            }
+
+            // Carry notes from previous test date so users don't need to retype recurring notes.
+            const previousDate = getPreviousDateForFallback();
+            if (!previousDate) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/dashboard/notes/${currentPlatform}/${previousDate}`);
+                const previousNotes = await response.json();
+                const currentStableKeys = new Set(Object.keys(notesCache || {}).map(buildStableNoteKey));
+
+                Object.entries(previousNotes || {}).forEach(([key, value]) => {
+                    if (!value) return;
+                    const stableKey = buildStableNoteKey(key);
+                    if (!currentStableKeys.has(stableKey)) {
+                        notesFallbackCache[stableKey] = value;
+                    }
                 });
+
+                if (Object.keys(notesFallbackCache).length > 0) {
+                    addDebugLog(`Applied ${Object.keys(notesFallbackCache).length} carried notes from ${previousDate}`);
+                }
+            } catch (err) {
+                console.warn('Error loading fallback notes:', err);
+            }
         }
 
         // Save note to server
@@ -1617,15 +1673,30 @@
                     value: noteValue
                 })
             })
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success) {
+                .then(async response => {
+                    let data = {};
+                    try {
+                        data = await response.json();
+                    } catch (parseError) {
+                        data = {};
+                    }
+
+                    const isSuccess =
+                        Boolean(data.success) ||
+                        data.status === 'success' ||
+                        (response.ok && !data.error);
+
+                    if (isSuccess) {
                         notesCache[noteKey] = noteValue;
+                        const stableKey = buildStableNoteKey(noteKey);
+                        notesCache[stableKey] = noteValue;
+                        delete notesFallbackCache[stableKey];
                         addDebugLog(`Note saved: ${noteKey}`);
                         return true;
-                    } else {
-                        throw new Error(data.error || 'Failed to save note');
                     }
+
+                    const statusHint = response.status ? ` (HTTP ${response.status})` : '';
+                    throw new Error((data && data.error) ? `${data.error}${statusHint}` : `Failed to save note${statusHint}`);
                 })
                 .catch(err => {
                     console.error('Error saving note:', err);
@@ -1636,7 +1707,24 @@
 
         // Get note from cache
         function getNote(noteKey) {
-            return notesCache[noteKey] || '';
+            const stableKey = buildStableNoteKey(noteKey);
+            return notesCache[noteKey] || notesCache[stableKey] || notesFallbackCache[stableKey] || '';
+        }
+
+        function getNoteForTest(itemName, itemCategory, itemLevel) {
+            const primaryKey = buildNoteKey(currentPlatform, currentDate, itemCategory, itemLevel, itemName);
+            const primaryNote = getNote(primaryKey);
+            if (primaryNote) {
+                return { note: primaryNote, noteKey: primaryKey };
+            }
+
+            // Backward compatibility: old ALL modal notes were stored under all/all key.
+            const legacyAllKey = buildNoteKey(currentPlatform, currentDate, 'all', 'all', itemName);
+            const legacyNote = getNote(legacyAllKey);
+            return {
+                note: legacyNote || '',
+                noteKey: primaryKey
+            };
         }
 
         // Helper function to add debug logs
@@ -2704,17 +2792,19 @@
             filteredItems.forEach((item, index) => {
                 const row = document.createElement('tr');
                 const resultClass = item.result === 'PASS' ? 'result-pass' : 'result-fail';
-                const noteKey = `note_${currentPlatform}_${currentDate}_${currentCategory}_${currentLevel}_${item.name}`;
-                const savedNote = getNote(noteKey);
+
+                // Get category and level from item (tagged in showAllTestDetails) or use current
+                const itemCategory = item._category || currentCategory;
+                const itemLevel = item._level || currentLevel;
+
+                const noteInfo = getNoteForTest(item.name, itemCategory, itemLevel);
+                const noteKey = noteInfo.noteKey;
+                const savedNote = noteInfo.note;
                 const hasNote = savedNote.length > 0;
                 const btnClass = hasNote ? 'note-btn has-note' : 'note-btn';
                 const btnText = hasNote ? '📝 Edit' : '✏️ Add';
                 const displayNote = savedNote.length > 50 ? savedNote.substring(0, 50) + '...' : savedNote;
                 const noteDisplay = hasNote ? displayNote : '<span style="color: #7f8c8d; font-style: italic;">No note</span>';
-
-                // Get category and level from item (tagged in showAllTestDetails) or use current
-                const itemCategory = item._category || currentCategory;
-                const itemLevel = item._level || currentLevel;
 
                 // Create View button HTML based on platform
                 const viewBtnHtml = (currentPlatform !== 'MINIPACK3N') ? `
@@ -2902,8 +2992,10 @@
 
             filteredItems.forEach((item, index) => {
                 const name = `"${item.name.replace(/"/g, '""')}"`;  // Escape quotes
-                const noteKey = `note_${currentPlatform}_${currentDate}_${currentCategory}_${currentLevel}_${item.name}`;
-                const note = getNote(noteKey);
+                const itemCategory = item._category || currentCategory;
+                const itemLevel = item._level || currentLevel;
+                const noteInfo = getNoteForTest(item.name, itemCategory, itemLevel);
+                const note = noteInfo.note;
                 const noteEscaped = `"${note.replace(/"/g, '""')}"`;
                 csvContent += `${index + 1},${name},${item.result},${noteEscaped}\n`;
             });
