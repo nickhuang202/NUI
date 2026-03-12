@@ -2096,7 +2096,24 @@
             const row = tbody.querySelector(`tr[data-dut-id="${dutId}"]`);
             if (!row || !row.cells || row.cells.length < 8) return;
 
+            const cached = getCachedTodaySummary(dutId);
             row.cells[7].innerHTML = renderTodayTestStatusHtml(dutId);
+
+            // Cache may expire while row updates are driven by status/testing polling.
+            // Re-fetch in background so "Loading..." transitions back to a real value.
+            if (!cached) {
+                fetchTodaySummaryForDut(dutId)
+                    .then(() => {
+                        const latestTbody = document.getElementById('detailTableBody');
+                        if (!latestTbody) return;
+                        const latestRow = latestTbody.querySelector(`tr[data-dut-id="${dutId}"]`);
+                        if (!latestRow || !latestRow.cells || latestRow.cells.length < 8) return;
+                        latestRow.cells[7].innerHTML = renderTodayTestStatusHtml(dutId);
+                    })
+                    .catch(() => {
+                        // Keep UI stable if fetch fails; fallback state is handled in cache path.
+                    });
+            }
         }
 
         async function hydrateTodayStatusForRows(dutIds) {
