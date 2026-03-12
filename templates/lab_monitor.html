@@ -271,50 +271,6 @@
             filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
         }
 
-        .dut-config {
-            display: inline-block;
-            width: 14px;
-            height: 14px;
-            border-radius: 3px;
-            border: 2px solid white;
-            flex-shrink: 0;
-        }
-
-        .dut-config.config-a {
-            background: #f1c40f;
-        }
-
-        .dut-config.config-b {
-            background: #2ecc71;
-        }
-
-        .dut-config.config-c {
-            background: #3498db;
-        }
-
-        .dut-status {
-            position: absolute;
-            top: -5px;
-            right: -5px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            border: 2px solid white;
-        }
-
-        .dut-status.online {
-            background: #2ecc71;
-        }
-
-        .dut-status.offline {
-            background: #e74c3c;
-        }
-
-        .dut-status.testing {
-            background: #f39c12;
-            animation: pulse 1.5s infinite;
-        }
-
         @keyframes pulse {
 
             0%,
@@ -596,41 +552,6 @@
 
         .btn-secondary:hover {
             background: #7f8c8d;
-        }
-
-        .legend {
-            background: rgba(52, 73, 94, 0.8);
-            padding: 20px;
-            border-radius: 12px;
-            margin-top: 30px;
-            text-align: center;
-        }
-
-        .legend-title {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #5cb85c;
-        }
-
-        .legend-items {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .legend-icon {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            border: 2px solid white;
         }
 
         .notification {
@@ -943,6 +864,80 @@
             font-size: 11px;
             font-weight: bold;
         }
+
+        .table-test-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 116px;
+        }
+
+        .table-test-status.is-today {
+            background: rgba(92, 184, 92, 0.12);
+            border: 1px solid rgba(92, 184, 92, 0.45);
+            border-radius: 10px;
+            padding: 4px 6px;
+        }
+
+        .table-test-status-donut {
+            --pass-angle: 0deg;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: conic-gradient(#5cb85c 0 var(--pass-angle), #e74c3c var(--pass-angle) 360deg);
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .table-test-status.is-today .table-test-status-donut {
+            box-shadow: 0 0 0 2px rgba(92, 184, 92, 0.65);
+        }
+
+        .table-test-status-donut::after {
+            content: '';
+            position: absolute;
+            inset: 6px;
+            border-radius: 50%;
+            background: rgba(44, 62, 80, 0.95);
+        }
+
+        .table-test-status-meta {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+        }
+
+        .table-test-status-tag {
+            font-size: 10px;
+            font-weight: 700;
+            color: #5cb85c;
+            letter-spacing: 0.4px;
+            margin-bottom: 2px;
+        }
+
+        .table-test-status-total {
+            font-weight: 700;
+            color: #ecf0f1;
+            font-size: 12px;
+        }
+
+        .table-test-status-breakdown {
+            font-size: 11px;
+            color: #95a5a6;
+        }
+
+        .table-test-status-running {
+            color: #f39c12;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+
+        .table-test-status-empty {
+            color: #95a5a6;
+            font-weight: 600;
+            font-size: 12px;
+        }
     </style>
 </head>
 
@@ -970,42 +965,12 @@
         </div>
     </div>
 
-    <!-- Legend -->
-    <div class="legend">
-        <div class="legend-title">Legend</div>
-        <div class="legend-items">
-            <div class="legend-item">
-                <div class="legend-icon" style="background: #f1c40f;"></div>
-                <span>Config A</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-icon" style="background: #2ecc71;"></div>
-                <span>Config B</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-icon" style="background: #3498db;"></div>
-                <span>Config C</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-icon" style="background: #2ecc71;"></div>
-                <span>Online</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-icon" style="background: #e74c3c;"></div>
-                <span>Offline</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-icon" style="background: #f39c12; animation: pulse 1.5s infinite;"></div>
-                <span>Testing</span>
-            </div>
-        </div>
-        <div
-            style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1); color: #3498db; font-size: 14px;">
-            💡 <strong>Tip:</strong> Hold <kbd
-                style="padding: 2px 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">Ctrl</kbd> (or <kbd
-                style="padding: 2px 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">⌘ Cmd</kbd> on Mac)
-            while dragging to <strong>copy</strong> instead of move
-        </div>
+    <div
+        style="margin: 20px 0 0; color: #3498db; font-size: 14px; text-align: center;">
+        💡 <strong>Tip:</strong> Hold <kbd
+            style="padding: 2px 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">Ctrl</kbd> (or <kbd
+            style="padding: 2px 6px; background: rgba(255,255,255,0.1); border-radius: 3px;">⌘ Cmd</kbd> on Mac)
+        while dragging to <strong>copy</strong> instead of move
     </div>
 
     <!-- Detail Information Table -->
@@ -1024,7 +989,7 @@
                         <th>IP</th>
                         <th>New Report</th>
                         <th>Online/Offline</th>
-                        <th>Under Testing</th>
+                        <th>Today Test Status</th>
                         <th>Report</th>
                         <th>Schedule Test</th>
                     </tr>
@@ -1089,14 +1054,6 @@
             <div class="form-group">
                 <label for="dutPassword">SCP Password</label>
                 <input type="password" id="dutPassword" placeholder="Password for SCP login (optional)">
-            </div>
-            <div class="form-group">
-                <label for="dutConfig">Config Type</label>
-                <select id="dutConfig">
-                    <option value="Config A">Config A</option>
-                    <option value="Config B">Config B</option>
-                    <option value="Config C">Config C</option>
-                </select>
             </div>
             <div class="form-group">
                 <label for="dutDescription">Description</label>
@@ -1972,6 +1929,183 @@
         let currentDutId = null;
         let editMode = false;
         let currentScheduleDutId = null;
+        let todaySummaryCache = {};
+        const todaySummaryInflight = new Map();
+        const TODAY_SUMMARY_CACHE_TTL_MS = 120000;
+
+        function getLocalTodayDateString() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function getCachedTodaySummary(dutId) {
+            const cache = todaySummaryCache[dutId];
+            if (!cache) return null;
+            if (cache.date !== getLocalTodayDateString()) return null;
+            if ((Date.now() - (cache.fetchedAt || 0)) > TODAY_SUMMARY_CACHE_TTL_MS) return null;
+            return cache;
+        }
+
+        async function fetchSummaryByDate(dutId, dateString) {
+            try {
+                const response = await fetch(`/api/lab_monitor/dut/${encodeURIComponent(dutId)}/dashboard/summary/${dateString}`);
+                const data = await response.json();
+                const allTests = data?.summary?.all_tests || {};
+                const passed = Number(allTests.passed || 0);
+                const failed = Number(allTests.failed || 0);
+                const total = Number(allTests.total || (passed + failed));
+
+                return {
+                    success: data?.success === true,
+                    passed,
+                    failed,
+                    total
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    passed: 0,
+                    failed: 0,
+                    total: 0
+                };
+            }
+        }
+
+        async function fetchLatestAvailableDate(dutId) {
+            try {
+                const response = await fetch(`/api/lab_monitor/dut/${encodeURIComponent(dutId)}/dashboard/dates`);
+                const data = await response.json();
+                if (data?.success && Array.isArray(data.dates) && data.dates.length > 0) {
+                    return String(data.dates[0]).trim();
+                }
+            } catch (error) {
+                // Ignore and keep fallback as null.
+            }
+            return null;
+        }
+
+        async function fetchTodaySummaryForDut(dutId) {
+            const today = getLocalTodayDateString();
+            const cached = getCachedTodaySummary(dutId);
+
+            if (cached && cached.date === today) {
+                return cached;
+            }
+
+            if (todaySummaryInflight.has(dutId)) {
+                return todaySummaryInflight.get(dutId);
+            }
+
+            const requestPromise = (async () => {
+                try {
+                    let selectedDate = today;
+                    let summaryData = await fetchSummaryByDate(dutId, today);
+
+                    // If today's summary is missing/empty, use latest available report date.
+                    if (!(summaryData.success && summaryData.total > 0)) {
+                        const latestDate = await fetchLatestAvailableDate(dutId);
+                        if (latestDate && latestDate !== today) {
+                            const latestSummary = await fetchSummaryByDate(dutId, latestDate);
+                            if (latestSummary.success) {
+                                selectedDate = latestDate;
+                                summaryData = latestSummary;
+                            }
+                        }
+                    }
+
+                    const summary = {
+                        date: today,
+                        dataDate: selectedDate,
+                        passed: summaryData.passed,
+                        failed: summaryData.failed,
+                        total: summaryData.total,
+                        hasData: summaryData.success === true && summaryData.total > 0,
+                        fetchedAt: Date.now()
+                    };
+
+                    todaySummaryCache[dutId] = summary;
+                    return summary;
+                } catch (error) {
+                    const fallback = {
+                        date: today,
+                        passed: 0,
+                        failed: 0,
+                        total: 0,
+                        hasData: false,
+                        fetchedAt: Date.now()
+                    };
+                    todaySummaryCache[dutId] = fallback;
+                    return fallback;
+                } finally {
+                    todaySummaryInflight.delete(dutId);
+                }
+            })();
+
+            todaySummaryInflight.set(dutId, requestPromise);
+            return requestPromise;
+        }
+
+        function formatSummaryUpdatedTime(timestamp) {
+            if (!timestamp) return 'N/A';
+            const dt = new Date(timestamp);
+            if (Number.isNaN(dt.getTime())) return 'N/A';
+            return dt.toLocaleString();
+        }
+
+        function renderTodayTestStatusHtml(dutId) {
+            const cached = getCachedTodaySummary(dutId);
+            const status = statuses[dutId] || {};
+            const runningBadge = status.testing ? '<span class="table-test-status-running">RUNNING</span>' : '';
+            const dataDateText = cached?.dataDate || cached?.date || 'N/A';
+            const isTodayData = dataDateText === getLocalTodayDateString();
+            const containerClass = isTodayData ? 'table-test-status is-today' : 'table-test-status';
+            const todayTag = isTodayData ? '<span class="table-test-status-tag">TODAY</span>' : '';
+
+            if (!cached) {
+                return `<span class="table-test-status-empty">Loading...</span>`;
+            }
+
+            if (!cached.hasData || cached.total <= 0) {
+                const noDataTooltip = `Pass Rate: N/A&#10;Data Date: ${dataDateText}&#10;Last Updated: ${formatSummaryUpdatedTime(cached.fetchedAt)}`;
+                return `<div class="${containerClass}" title="${noDataTooltip}">${todayTag}${runningBadge}<span class="table-test-status-empty">No Data</span></div>`;
+            }
+
+            const passAngle = Math.round((cached.passed / cached.total) * 360);
+            const passRate = ((cached.passed / cached.total) * 100).toFixed(1);
+            const tooltip = `Pass Rate: ${passRate}%&#10;Data Date: ${dataDateText}${isTodayData ? ' (TODAY)' : ' (LATEST AVAILABLE)'}&#10;Last Updated: ${formatSummaryUpdatedTime(cached.fetchedAt)}&#10;Summary: ${cached.passed} passed, ${cached.failed} failed, total ${cached.total}`;
+            return `
+                <div class="${containerClass}" title="${tooltip}">
+                    <span class="table-test-status-donut" style="--pass-angle: ${passAngle}deg;"></span>
+                    <span class="table-test-status-meta">
+                        ${todayTag}
+                        <span class="table-test-status-total">Total: ${cached.total}</span>
+                        <span class="table-test-status-breakdown">P:${cached.passed} F:${cached.failed}</span>
+                        ${runningBadge}
+                    </span>
+                </div>
+            `;
+        }
+
+        function updateTodayStatusCell(dutId) {
+            const tbody = document.getElementById('detailTableBody');
+            if (!tbody) return;
+
+            const row = tbody.querySelector(`tr[data-dut-id="${dutId}"]`);
+            if (!row || !row.cells || row.cells.length < 8) return;
+
+            row.cells[7].innerHTML = renderTodayTestStatusHtml(dutId);
+        }
+
+        async function hydrateTodayStatusForRows(dutIds) {
+            const uniqueDutIds = [...new Set(dutIds || [])];
+            if (uniqueDutIds.length === 0) return;
+
+            await Promise.all(uniqueDutIds.map(dutId => fetchTodaySummaryForDut(dutId)));
+            uniqueDutIds.forEach(dutId => updateTodayStatusCell(dutId));
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function () {
@@ -2062,20 +2196,13 @@
                     }
                     statuses[dutId].testing = result.testing;
 
-                    // Update UI for this specific DUT card
+                    // Keep DUT card tooltip synced with testing state.
                     const dutElement = document.querySelector(`[data-dut-id="${dutId}"]`);
                     if (dutElement) {
-                        const statusDot = dutElement.querySelector('.dut-status');
-                        if (statusDot) {
-                            if (result.testing) {
-                                statusDot.className = 'dut-status testing';
-                                dutElement.title = dutElement.title.replace(' - Testing in progress', '') + ' - Testing in progress';
-                            } else {
-                                // Restore original status
-                                const originalStatus = statuses[dutId].status || 'unknown';
-                                statusDot.className = `dut-status ${originalStatus}`;
-                                dutElement.title = dutElement.title.replace(' - Testing in progress', '');
-                            }
+                        if (result.testing) {
+                            dutElement.title = dutElement.title.replace(' - Testing in progress', '') + ' - Testing in progress';
+                        } else {
+                            dutElement.title = dutElement.title.replace(' - Testing in progress', '');
                         }
                     }
 
@@ -2158,21 +2285,12 @@
         // Create DUT HTML
         function createDutHTML(dut) {
             const status = statuses[dut.id] || { status: 'unknown' };
-            // Safely get config_type - handle both string and object cases
-            const configType = typeof dut.config_type === 'string' ? dut.config_type : (dut.config_type?.value || dut.config_type?.name || 'Config A');
-            const configClass = configType.toLowerCase().replace(/\s+/g, '-');
             const lastChecked = status.last_checked ? new Date(status.last_checked).toLocaleString() : 'Never';
             const version = status.version || 'unknown';
             const versionLabel = version !== 'unknown' ? `NUI ${version}` : 'No version';
             const hasNewReports = status.has_new_reports || false;
             const newReportsCount = status.new_reports_count || 0;
             const isTesting = status.testing || false;
-
-            // Determine status class - testing takes precedence over online/offline
-            let statusClass = status.status;
-            if (isTesting) {
-                statusClass = 'testing';
-            }
 
             // Safely get IP address
             const ipAddress = typeof dut.ip_address === 'string' ? dut.ip_address : (dut.ip_address || 'No IP');
@@ -2195,13 +2313,11 @@
                             <path d="M14 17 L17 17 M14 17 L15 16 M14 17 L15 18" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>
-                    <div class="dut-config ${configClass}"></div>
                     <div class="dut-info">
                         <span class="dut-name">${escapeHtml(String(dut.name || 'Unnamed DUT'))}</span>
                         <span class="dut-version">${versionLabel}</span>
                     </div>
                     ${hasNewReports ? `<div class="new-report-badge" title="Click to sync ${newReportsCount} new report(s)" onclick="showSyncModal('${dut.id}'); event.stopPropagation();">${newReportsCount}</div>` : ''}
-                    <div class="dut-status ${statusClass}"></div>
                     <div class="dut-actions">
                         ${dut.ip_address ? `<button class="action-btn" onclick="showReportModal('${dut.id}'); event.stopPropagation();">Reports</button>` : ''}
                         ${hasNewReports ? `<button class="action-btn sync" onclick="showSyncModal('${dut.id}'); event.stopPropagation();">Sync All (${newReportsCount})</button>` : ''}
@@ -2531,7 +2647,6 @@
             document.getElementById('dutName').value = '';
             document.getElementById('dutIp').value = '';
             document.getElementById('dutPassword').value = '';
-            document.getElementById('dutConfig').value = 'Config A';
             document.getElementById('dutDescription').value = '';
             currentLabId = labId;
             currentPlatformId = platformId;
@@ -2565,9 +2680,6 @@
             document.getElementById('dutName').value = foundDut.name;
             document.getElementById('dutIp').value = foundDut.ip_address || '';
             document.getElementById('dutPassword').value = foundDut.password || '';
-            // Safely get config_type - handle both string and object cases
-            const configTypeValue = typeof foundDut.config_type === 'string' ? foundDut.config_type : (foundDut.config_type?.value || foundDut.config_type?.name || 'Config A');
-            document.getElementById('dutConfig').value = configTypeValue;
             document.getElementById('dutDescription').value = foundDut.description || '';
             currentLabId = foundLabId;
             currentPlatformId = foundPlatformId;
@@ -2584,7 +2696,6 @@
             const name = document.getElementById('dutName').value.trim();
             const ip_address = document.getElementById('dutIp').value.trim();
             const password = document.getElementById('dutPassword').value;
-            const config_type = document.getElementById('dutConfig').value;
             const description = document.getElementById('dutDescription').value.trim();
 
             if (!name) {
@@ -2598,7 +2709,7 @@
                     response = await fetch(`/api/lab_monitor/dut/${currentLabId}/${currentPlatformId}/${currentDutId}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ name, ip_address, password, config_type, description })
+                        body: JSON.stringify({ name, ip_address, password, description })
                     });
                 } else {
                     response = await fetch('/api/lab_monitor/dut', {
@@ -2610,7 +2721,6 @@
                             name,
                             ip_address,
                             password,
-                            config_type,
                             description
                         })
                     });
@@ -3182,18 +3292,8 @@
                 return;
             }
 
-            // Update the "Under Testing" column (8th column, index 7)
-            const testingCell = row.cells[7];
-            if (testingCell) {
-                const status = statuses[dutId] || {};
-                const isTesting = status.testing || false;
-                console.log(`[updateTableRow] Updating dutId ${dutId}: testing=${isTesting}`);
-                testingCell.innerHTML = `
-                    <span class="table-status-badge ${isTesting ? 'testing' : ''}" style="${!isTesting ? 'opacity: 0.3;' : ''}">
-                        ${isTesting ? 'YES' : 'NO'}
-                    </span>
-                `;
-            }
+            // Update the 8th column with today's test status donut chart.
+            updateTodayStatusCell(dutId);
         }
 
         // Detail Table Functions
@@ -3245,11 +3345,12 @@
             titleElement.textContent = title;
 
             // Populate table
+            const renderedDutIds = [];
+
             duts.forEach(dut => {
                 const status = statuses[dut.id] || {};
                 const version = status.version || 'N/A';
                 const onlineStatus = status.status || 'offline';
-                const isTesting = status.testing || false;
                 const newReportsCount = status.new_reports_count || 0;
                 const hasNewReports = newReportsCount > 0;
 
@@ -3276,9 +3377,7 @@
                         </span>
                     </td>
                     <td>
-                        <span class="table-status-badge ${isTesting ? 'testing' : ''}" style="${!isTesting ? 'opacity: 0.3;' : ''}">
-                            ${isTesting ? 'YES' : 'NO'}
-                        </span>
+                        ${renderTodayTestStatusHtml(dut.id)}
                     </td>
                     <td>
                         <button class="table-btn" onclick="showReportModal('${dut.id}'); event.stopPropagation();">Report</button>
@@ -3294,6 +3393,7 @@
                     </td>
                 `;
                 tbody.appendChild(row);
+                renderedDutIds.push(dut.id);
             });
 
             if (duts.length === 0) {
@@ -3301,6 +3401,9 @@
                 row.innerHTML = '<td colspan="10" style="text-align: center; color: #95a5a6; padding: 30px;">No DUTs found</td>';
                 tbody.appendChild(row);
             }
+
+            // Hydrate today's pass/fail summaries for all visible rows.
+            hydrateTodayStatusForRows(renderedDutIds);
 
         }
 

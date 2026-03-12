@@ -65,6 +65,25 @@ async def delete_test_procedure(procedure_name: str) -> str:
 
 
 @mcp.tool()
+async def save_test_procedure(procedure_name: str, config: dict[str, Any]) -> str:
+    """Create or update one saved test procedure."""
+    payload = {
+        "name": procedure_name,
+        "config": config,
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(f"{NUI_API_BASE}/test/procedures", json=payload)
+            response.raise_for_status()
+            return str(response.json())
+        except httpx.HTTPStatusError as e:
+            return f"Error connecting to NUI API: {e}"
+        except httpx.RequestError as e:
+            return f"Request to NUI API failed: {e}"
+
+
+@mcp.tool()
 async def get_port_status() -> str:
     """View link UP/DOWN status of all ports."""
     async with httpx.AsyncClient() as client:
@@ -126,6 +145,26 @@ async def delete_schedule_profile(profile_name: str) -> str:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.delete(f"{NUI_API_BASE}/schedule/profiles/{profile_name}")
+            response.raise_for_status()
+            return str(response.json())
+        except httpx.HTTPStatusError as e:
+            return f"Error connecting to NUI API: {e}"
+        except httpx.RequestError as e:
+            return f"Request to NUI API failed: {e}"
+
+
+@mcp.tool()
+async def save_schedule_profile(profile_name: str, cron_rule: dict[str, Any], tests: list[dict[str, Any]]) -> str:
+    """Create or update a schedule profile with cron rule and test blocks."""
+    payload = {
+        "profile_name": profile_name,
+        "cron_rule": cron_rule,
+        "tests": tests,
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(f"{NUI_API_BASE}/schedule/profiles", json=payload)
             response.raise_for_status()
             return str(response.json())
         except httpx.HTTPStatusError as e:

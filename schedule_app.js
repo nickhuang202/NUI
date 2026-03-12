@@ -18,6 +18,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         return path;
     }
 
+    function initializeBackButton() {
+        const backButton = document.getElementById('btn-back-run-test');
+        if (!backButton) return;
+
+        if (scheduleSource === 'monitor') {
+            backButton.textContent = 'Back to Lab Monitor';
+            backButton.onclick = () => {
+                window.location.href = '/lab_monitor';
+            };
+            return;
+        }
+
+        backButton.onclick = () => {
+            window.location.href = '/?mode=normal';
+        };
+    }
+
     function applyPlatformName(platformName) {
         const normalized = (platformName || '').trim();
         if (!normalized || normalized.toLowerCase() === 'unknown') return;
@@ -59,6 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await resolveMonitorContextProfile();
+    initializeBackButton();
 
     // 1. Initialize Timeline Axis (00:00 to 24:00)
     const timeAxis = document.getElementById('time-axis');
