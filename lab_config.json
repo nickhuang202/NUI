@@ -90,14 +90,54 @@
               "description": "Kernel-6.16.1",
               "created_at": "2026-02-05T09:34:12.806364",
               "updated_at": "2026-02-05T09:41:32.270986"
+            },
+            {
+              "id": "dut_20260312103654859404",
+              "name": "11",
+              "ip_address": "192.168.1.1",
+              "password": "",
+              "config_type": "Config A",
+              "description": "",
+              "created_at": "2026-03-12T10:36:54.859419",
+              "updated_at": "2026-03-12T10:36:54.859423"
+            },
+            {
+              "id": "dut_20260312103706026665",
+              "name": "2",
+              "ip_address": "192.168.1.1",
+              "password": "",
+              "config_type": "Config A",
+              "description": "",
+              "created_at": "2026-03-12T10:37:06.026680",
+              "updated_at": "2026-03-12T10:37:06.026684"
+            },
+            {
+              "id": "dut_20260312103713360218",
+              "name": "3",
+              "ip_address": "192.168.1.1",
+              "password": "",
+              "config_type": "Config A",
+              "description": "",
+              "created_at": "2026-03-12T10:37:13.360231",
+              "updated_at": "2026-03-12T10:37:13.360235"
+            },
+            {
+              "id": "dut_20260312103722493430",
+              "name": "4",
+              "ip_address": "192.168.1.1",
+              "password": "",
+              "config_type": "Config A",
+              "description": "",
+              "created_at": "2026-03-12T10:37:22.493445",
+              "updated_at": "2026-03-12T10:37:22.493449"
             }
           ],
           "created_at": "2026-02-05T09:38:18.920516",
-          "updated_at": "2026-02-05T09:41:32.270989"
+          "updated_at": "2026-03-12T10:37:22.493453"
         }
       ],
       "created_at": "2026-01-21T12:42:12.835087",
-      "updated_at": "2026-02-05T09:41:32.270992"
+      "updated_at": "2026-03-12T10:37:22.493454"
     },
     {
       "id": "lab_20260121124233851420",
